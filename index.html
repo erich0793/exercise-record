@@ -1,0 +1,1589 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>每週運動達標換算</title>
+<style>
+/* ========== 設計代幣（單一強調色 + 低彩度中性配色） ========== */
+:root{
+  --bg:#f7f7f6;
+  --surface:#ffffff;
+  --surface-2:#f1f1ef;
+  --border:#e0e0dc;
+  --border-strong:#c9c9c3;
+  --text:#1d1f1e;
+  --text-muted:#6b6f6d;
+  --text-faint:#93968f;
+  --accent:#2f6f5e;          /* 單一強調色 */
+  --accent-soft:#e4efeb;
+  --accent-text:#ffffff;
+  --track:#e4e4e0;
+  --green:#2f6f5e;
+  --yellow:#a8801f;
+  --red:#a34237;
+  --radius:8px;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#131514;
+    --surface:#1b1e1d;
+    --surface-2:#232726;
+    --border:#2e3331;
+    --border-strong:#414745;
+    --text:#e9ebea;
+    --text-muted:#9aa09d;
+    --text-faint:#767c79;
+    --accent:#63b39b;
+    --accent-soft:#1f2f2a;
+    --accent-text:#10201b;
+    --track:#2b302e;
+    --green:#63b39b;
+    --yellow:#d0aa4e;
+    --red:#d98074;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC","Microsoft JhengHei","Helvetica Neue",Arial,sans-serif;
+  font-size:16px;
+  line-height:1.6;
+  -webkit-text-size-adjust:100%;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+.wrap{max-width:720px;margin:0 auto;padding:0 16px 64px}
+header.app{
+  position:sticky;top:0;z-index:20;
+  background:var(--bg);
+  border-bottom:1px solid var(--border);
+  padding-top:env(safe-area-inset-top);
+}
+header.app .inner{max-width:720px;margin:0 auto;padding:12px 16px 0}
+h1{font-size:17px;margin:0 0 2px;letter-spacing:.02em}
+.sub{font-size:12px;color:var(--text-faint);margin:0 0 10px}
+nav.tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
+nav.tabs::-webkit-scrollbar{display:none}
+nav.tabs button{
+  flex:1 0 auto;background:none;border:none;border-bottom:2px solid transparent;
+  color:var(--text-muted);font:inherit;font-size:14px;padding:8px 10px;cursor:pointer;white-space:nowrap;
+}
+nav.tabs button[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+section.tabpanel{display:none;padding-top:18px}
+section.tabpanel.active{display:block}
+.card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:16px;margin-bottom:14px;
+}
+.card h2{font-size:13px;font-weight:600;color:var(--text-muted);margin:0 0 12px;letter-spacing:.06em}
+.card h3{font-size:14px;margin:18px 0 8px}
+.row{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.big{font-size:34px;font-weight:600;line-height:1.1;font-variant-numeric:tabular-nums}
+.big small{font-size:14px;font-weight:400;color:var(--text-muted);margin-left:4px}
+.mid{font-size:22px;font-weight:600;font-variant-numeric:tabular-nums}
+.muted{color:var(--text-muted);font-size:13px}
+.faint{color:var(--text-faint);font-size:12px}
+.num{font-variant-numeric:tabular-nums}
+/* 進度條 */
+.bar-wrap{margin-top:10px}
+.bar{position:relative;height:12px;background:var(--track);border-radius:2px;overflow:visible}
+.bar .fill{position:absolute;left:0;top:0;bottom:0;background:var(--accent);border-radius:2px 0 0 2px}
+.bar .fill.over{background:linear-gradient(90deg,var(--accent) 0 60%,var(--accent) 100%);opacity:.85}
+.bar .tick{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--border-strong)}
+.bar .tick span{position:absolute;top:14px;left:50%;transform:translateX(-50%);font-size:11px;color:var(--text-faint);white-space:nowrap}
+.bar-labels{display:flex;justify-content:space-between;margin-top:22px;font-size:12px;color:var(--text-faint)}
+/* 標籤 */
+.tag{display:inline-block;font-size:11px;padding:2px 7px;border-radius:99px;border:1px solid var(--border-strong);color:var(--text-muted);white-space:nowrap}
+.tag.on{background:var(--accent-soft);border-color:transparent;color:var(--accent)}
+.tag.grade{font-family:var(--mono);font-size:10px}
+.status{font-size:15px;font-weight:600}
+.status.lv0{color:var(--text-muted)}
+.status.lv1{color:var(--green)}
+.status.lv2{color:var(--accent)}
+/* 肌群格 */
+.muscles{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px}
+@media(max-width:400px){.muscles{grid-template-columns:repeat(3,1fr)}}
+.muscle{
+  border:1px solid var(--border);border-radius:6px;padding:8px 4px;text-align:center;
+  font-size:12px;color:var(--text-faint);background:var(--surface-2);
+  filter:grayscale(1);
+}
+.muscle.done{background:var(--accent-soft);border-color:transparent;color:var(--accent);filter:none;font-weight:600}
+.muscle b{display:block;font-size:13px}
+.muscle em{display:block;font-style:normal;font-size:10px;opacity:.75}
+/* 燈號 */
+.signal{display:flex;align-items:center;gap:12px}
+.signal .dot{font-size:30px;line-height:1}
+.signal .txt b{display:block;font-size:16px}
+/* 表單 */
+label{display:block;font-size:13px;color:var(--text-muted);margin:0 0 4px}
+input,select,textarea,button{font:inherit;color:var(--text)}
+input[type=text],input[type=number],input[type=date],select,textarea{
+  width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;
+  padding:9px 10px;font-size:16px;
+}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:-1px}
+.field{margin-bottom:12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+@media(max-width:420px){.grid2{grid-template-columns:1fr}}
+.btn{
+  background:var(--accent);color:var(--accent-text);border:none;border-radius:6px;
+  padding:11px 16px;font-size:15px;font-weight:600;cursor:pointer;width:100%;
+}
+.btn.secondary{background:transparent;color:var(--text);border:1px solid var(--border-strong)}
+.btn.danger{background:transparent;color:var(--red);border:1px solid var(--red)}
+.btn.small{width:auto;padding:6px 12px;font-size:13px;font-weight:500}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap}
+.check{display:flex;align-items:flex-start;gap:8px;font-size:14px;color:var(--text);margin:0 0 8px}
+.check input{width:auto;margin-top:4px;accent-color:var(--accent)}
+.chipset{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--border-strong);border-radius:99px;padding:6px 12px;font-size:13px;cursor:pointer;background:var(--surface-2);user-select:none}
+.chip.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:600}
+/* 提示框 */
+details.note{border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:4px;background:var(--surface-2);padding:10px 12px;margin:12px 0;font-size:13px}
+details.note summary{cursor:pointer;font-weight:600;color:var(--text);font-size:13px}
+details.note p{margin:8px 0 0;color:var(--text-muted);line-height:1.7}
+.callout{border:1px solid var(--border);border-left:3px solid var(--border-strong);border-radius:4px;background:var(--surface-2);padding:10px 12px;font-size:12.5px;color:var(--text-muted);line-height:1.7;margin:12px 0}
+/* 預覽 */
+.preview{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:6px}
+@media(max-width:480px){.preview{grid-template-columns:repeat(2,1fr)}}
+.preview div{background:var(--surface-2);border-radius:6px;padding:8px;text-align:center}
+.preview span{display:block;font-size:11px;color:var(--text-faint)}
+.preview b{font-size:18px;font-variant-numeric:tabular-nums}
+/* 歷史 */
+.weekhead{display:flex;justify-content:space-between;align-items:baseline;margin:18px 0 6px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+.weekhead b{font-size:14px}
+.rec{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px dashed var(--border)}
+.rec:last-child{border-bottom:none}
+.rec .l{min-width:0}
+.rec .l b{font-size:14px;font-weight:600;display:block}
+.rec .l span{font-size:12px;color:var(--text-faint)}
+.rec .r{text-align:right;white-space:nowrap}
+.rec .r .v{font-size:13px;font-variant-numeric:tabular-nums}
+.linkbtn{background:none;border:none;color:var(--accent);font-size:12px;padding:2px 4px;cursor:pointer}
+table.tt{width:100%;border-collapse:collapse;font-size:12.5px}
+table.tt th,table.tt td{border-bottom:1px solid var(--border);padding:6px 4px;text-align:left;vertical-align:top}
+table.tt th{color:var(--text-faint);font-weight:600;font-size:11px}
+td.pass{color:var(--green);font-weight:600}
+td.fail{color:var(--red);font-weight:600}
+footer.refs{border-top:1px solid var(--border);margin-top:28px;padding-top:16px;font-size:12px;color:var(--text-muted);line-height:1.75}
+footer.refs h3{font-size:12px;color:var(--text);margin:14px 0 4px}
+footer.refs ul{margin:0;padding-left:18px}
+.disclaimer{border:1px solid var(--border-strong);border-radius:6px;padding:12px;margin-top:14px;font-size:12px;line-height:1.8;color:var(--text-muted)}
+.hidden{display:none !important}
+.toast{
+  position:fixed;left:50%;bottom:24px;transform:translateX(-50%);
+  background:var(--text);color:var(--bg);padding:9px 16px;border-radius:99px;font-size:13px;z-index:99;
+  opacity:0;pointer-events:none;transition:opacity .18s
+}
+.toast.show{opacity:.95}
+svg.chart{width:100%;height:auto;display:block}
+.legend{display:flex;gap:14px;font-size:11px;color:var(--text-faint);margin-top:6px}
+.legend i{display:inline-block;width:10px;height:10px;background:var(--accent);border-radius:2px;margin-right:4px;vertical-align:-1px}
+.legend i.line{height:2px;border-radius:0;background:var(--text-muted)}
+</style>
+</head>
+<body>
+
+<header class="app">
+  <div class="inner">
+    <h1>每週運動達標換算</h1>
+    <p class="sub">WHO 2020 / US PAG 2nd ed. — 有氧 + 肌力雙軌判定</p>
+    <nav class="tabs" role="tablist">
+      <button role="tab" data-tab="dash" aria-selected="true">本週儀表板</button>
+      <button role="tab" data-tab="add" aria-selected="false">新增紀錄</button>
+      <button role="tab" data-tab="hist" aria-selected="false">歷史紀錄</button>
+      <button role="tab" data-tab="set" aria-selected="false">設定</button>
+    </nav>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- ① 本週儀表板 -->
+  <section class="tabpanel active" id="tab-dash" role="tabpanel">
+    <div class="card">
+      <h2>本週區間</h2>
+      <div class="row">
+        <div><span class="mid" id="dashWeekLabel">—</span></div>
+        <div class="btnrow">
+          <button class="btn secondary small" id="weekPrev">← 上週</button>
+          <button class="btn secondary small" id="weekNext">下週 →</button>
+        </div>
+      </div>
+      <p class="faint" style="margin:6px 0 0">跨日活動歸屬於開始日所在之週。</p>
+    </div>
+
+    <div class="card">
+      <h2>綜合達標燈號</h2>
+      <div class="signal">
+        <div class="dot" id="sigDot">🔴</div>
+        <div class="txt">
+          <b id="sigText">兩項皆未達標</b>
+          <span class="muted" id="sigDetail">有氧未達標 · 肌力未達標</span>
+        </div>
+      </div>
+      <div class="callout" style="margin-bottom:0">
+        有氧與肌力為<strong>獨立且不可互相取代</strong>的建議，兩者不得互相折抵；有氧超量不會使肌力未達標時亮綠燈。
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>有氧 — 中強度等效分鐘 (MEM)</h2>
+      <div class="row">
+        <div class="big"><span id="memVal">0</span><small>MEM 分鐘/週</small></div>
+        <div style="text-align:right">
+          <div class="status lv0" id="memStatus">未達標</div>
+          <div class="faint" id="memTagEn">—</div>
+        </div>
+      </div>
+      <div class="bar-wrap">
+        <div class="bar" id="memBar">
+          <div class="fill" id="memFill" style="width:0%"></div>
+          <div class="tick" style="left:37.5%"><span>150</span></div>
+          <div class="tick" style="left:75%"><span>300</span></div>
+        </div>
+        <div class="bar-labels"><span>0</span><span>400+</span></div>
+      </div>
+      <p class="muted" style="margin:10px 0 0">
+        MEM = 中強度分鐘 + 2 × 高強度分鐘　<span class="num" id="memBreakdown"></span>
+      </p>
+      <div class="callout" style="margin-bottom:0">
+        <strong>150–300 MEM｜基本達標</strong>：substantial health benefits — <span class="tag grade">Strong recommendation, Moderate certainty</span><br>
+        <strong>&gt;300 MEM｜額外效益</strong>：additional health benefits — <span class="tag grade">Conditional recommendation, Moderate certainty</span>。
+        此為 conditional recommendation，屬「可以（may）」而非「應該（should）」達成，未達 300 並非缺失。
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>高強度單獨計</h2>
+      <div class="row">
+        <div class="big"><span id="vigVal">0</span><small>vigorous 分鐘/週</small></div>
+        <div style="text-align:right"><div class="status lv0" id="vigStatus">未達標</div></div>
+      </div>
+      <div class="bar-wrap">
+        <div class="bar">
+          <div class="fill" id="vigFill" style="width:0%"></div>
+          <div class="tick" style="left:37.5%"><span>75</span></div>
+          <div class="tick" style="left:75%"><span>150</span></div>
+        </div>
+        <div class="bar-labels"><span>0</span><span>200+</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>MET-minutes（輔助指標）</h2>
+      <div class="row">
+        <div class="big"><span id="metMinVal">0</span><small>MET-min/週</small></div>
+        <div style="text-align:right"><div class="muted" id="metMinBand">參考帶 500–1000</div></div>
+      </div>
+      <div class="bar-wrap">
+        <div class="bar">
+          <div class="fill" id="metMinFill" style="width:0%"></div>
+          <div class="tick" style="left:33.3%"><span>500</span></div>
+          <div class="tick" style="left:66.6%"><span>1000</span></div>
+        </div>
+        <div class="bar-labels"><span>0</span><span>1500+</span></div>
+      </div>
+      <p class="faint" style="margin:10px 0 0">MET-min = Σ(MET × 分鐘)。此為輔助指標，非主要達標判準；指引未設活動量上限。</p>
+      <p class="muted" style="margin:6px 0 0">本週估計總熱量：<span class="num" id="kcalVal">0</span> kcal（gross 總消耗，誤差約 ±15–20%）</p>
+    </div>
+
+    <div class="card">
+      <h2>肌力訓練</h2>
+      <div class="row">
+        <div class="big"><span id="strDays">0</span><small>天 / 目標 ≥2 天</small></div>
+        <div style="text-align:right">
+          <div class="status lv0" id="strStatus">未達標</div>
+          <div class="faint">Strong rec., Moderate</div>
+        </div>
+      </div>
+      <div class="muscles" id="muscleGrid"></div>
+      <p class="muted" id="muscleMissing" style="margin:10px 0 0"></p>
+      <p class="faint" style="margin:6px 0 0">達標須同時滿足：≥2 個不同日，且 7 大主要肌群全數涵蓋（強度 moderate 以上）。</p>
+    </div>
+
+    <div class="card">
+      <h2>本週紀錄</h2>
+      <div id="dashRecords"><p class="muted">本週尚無紀錄。</p></div>
+    </div>
+  </section>
+
+  <!-- ② 新增紀錄 -->
+  <section class="tabpanel" id="tab-add" role="tabpanel">
+    <div class="card">
+      <h2 id="formTitle">新增紀錄</h2>
+
+      <div class="grid2">
+        <div class="field">
+          <label for="fDate">日期（活動開始日）</label>
+          <input type="date" id="fDate">
+        </div>
+        <div class="field">
+          <label for="fMinutes">時長（分鐘）</label>
+          <input type="number" id="fMinutes" min="0" step="1" inputmode="numeric" placeholder="例：30">
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="fActivity">活動項目</label>
+        <select id="fActivity"></select>
+      </div>
+
+      <!-- 跑步模組 -->
+      <div id="modRun" class="hidden">
+        <div class="callout" style="margin-top:0">跑步採 ACSM 平地跑步代謝方程式動態計算 MET，不使用查表值。<span class="tag grade">[公式推導]</span></div>
+        <div class="grid2">
+          <div class="field">
+            <label for="fSpeed">速度（km/hr）</label>
+            <input type="number" id="fSpeed" min="0" step="0.1" inputmode="decimal" placeholder="例：9">
+          </div>
+          <div class="field">
+            <label for="fPace">配速（min/km）</label>
+            <input type="number" id="fPace" min="0" step="0.01" inputmode="decimal" placeholder="例：6.67">
+          </div>
+        </div>
+        <p class="muted" id="runMetLive" style="margin:-4px 0 12px"></p>
+      </div>
+
+      <!-- 游泳模組 -->
+      <div id="modSwim" class="hidden">
+        <h3>混合泳姿加權計算器</h3>
+        <p class="faint" style="margin:0 0 8px">輸入各泳姿佔比（%），加權 MET = Σ(佔比 × MET)。總和非 100% 時自動正規化。</p>
+        <div id="swimRows"></div>
+        <p class="muted" id="swimSum" style="margin:8px 0 0"></p>
+        <details class="note" open>
+          <summary>游泳 MET 估算之限制</summary>
+          <p>游泳的能量成本高度依賴技術（swimming economy）。同樣速度下，技術差異可造成代謝成本相差 2–3 倍。「主觀感覺輕鬆」不等於低 MET。Compendium 分類（recreational / training）對游泳的效度低於跑步與步行。建議以 talk test 或 RPE 校正。</p>
+        </details>
+        <div class="callout">
+          Compendium <strong>無「混合泳姿」對應代碼</strong>，且 recreational（5.3）與 training/competition（10.3）之間存在巨大空隙，無中間值可用。本工具採線性加權為<strong>實作約定</strong>，非實證結論。
+        </div>
+      </div>
+
+      <!-- 主觀強度覆寫 -->
+      <div class="field">
+        <div class="check">
+          <input type="checkbox" id="fOverride">
+          <label for="fOverride" style="margin:0;color:var(--text)">主觀強度覆寫（talk test / RPE）— 以主觀判定取代查表 MET</label>
+        </div>
+        <div id="modOverride" class="hidden">
+          <div class="field">
+            <label>判定方式</label>
+            <div class="chipset" id="ovModeChips">
+              <span class="chip on" data-ovmode="talk">Talk test</span>
+              <span class="chip" data-ovmode="borg">RPE Borg 6–20</span>
+              <span class="chip" data-ovmode="cr10">RPE CR10</span>
+            </div>
+          </div>
+          <div class="field" id="ovTalkWrap">
+            <label for="fTalk">Talk test 結果</label>
+            <select id="fTalk">
+              <option value="moderate">可講完整句子、無法唱歌 → Moderate</option>
+              <option value="vigorous">只能講幾個字就須換氣 → Vigorous</option>
+            </select>
+          </div>
+          <div class="field hidden" id="ovRpeWrap">
+            <label for="fRpe">RPE 數值</label>
+            <input type="number" id="fRpe" step="1" inputmode="numeric">
+            <p class="faint" style="margin:4px 0 0" id="rpeHint"></p>
+          </div>
+          <div class="field">
+            <label for="fOvMet">套用 MET（<span id="ovRange">3.0–5.9</span>）</label>
+            <input type="number" id="fOvMet" step="0.1" min="0" inputmode="decimal">
+          </div>
+          <div class="callout" style="margin-top:0">覆寫後之紀錄將標註來源為「主觀判定」，於歷史紀錄中可辨識。</div>
+        </div>
+      </div>
+
+      <!-- 肌力模組 -->
+      <div class="field">
+        <div class="check">
+          <input type="checkbox" id="fIsStrength">
+          <label for="fIsStrength" style="margin:0;color:var(--text)">計入肌力訓練（muscle-strengthening）</label>
+        </div>
+        <div id="modStrength" class="hidden">
+          <label>本次訓練之主要肌群（可複選）</label>
+          <div class="chipset" id="muscleChips"></div>
+          <div class="check" style="margin-top:10px">
+            <input type="checkbox" id="fStrengthModerate" checked>
+            <label for="fStrengthModerate" style="margin:0;color:var(--text)">強度為 moderate 或以上（未勾選則不計入肌群覆蓋與訓練天數）</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="fNote">備註（選填）</label>
+        <input type="text" id="fNote" placeholder="例：晨泳、間歇 8×400m">
+      </div>
+
+      <h3>本次計算結果</h3>
+      <div class="preview">
+        <div><span>MET</span><b id="pvMet">—</b></div>
+        <div><span>強度分級</span><b id="pvIntensity">—</b></div>
+        <div><span>MEM 貢獻</span><b id="pvMem">—</b></div>
+        <div><span>MET-min</span><b id="pvMetMin">—</b></div>
+      </div>
+      <p class="muted" id="pvExtra" style="margin:8px 0 0"></p>
+
+      <div class="btnrow" style="margin-top:16px">
+        <button class="btn" id="btnSave">儲存紀錄</button>
+        <button class="btn secondary hidden" id="btnCancelEdit">取消編輯</button>
+      </div>
+
+      <div class="callout">
+        2018 PAG 已取消「單次至少 10 分鐘」限制：<strong>任何時長的活動皆全數計入</strong>，本工具不設最小時長門檻。
+      </div>
+      <div class="callout" style="margin-bottom:0">
+        <strong>absolute vs relative intensity</strong>：本工具所有強度分級皆為 absolute MET-based，未反映個人心肺適能所決定的 relative intensity。心肺適能良好者的實際相對強度可能低於分類值；可用 talk test / RPE 覆寫功能校正為 relative intensity。
+      </div>
+    </div>
+  </section>
+
+  <!-- ③ 歷史紀錄 -->
+  <section class="tabpanel" id="tab-hist" role="tabpanel">
+    <div class="card">
+      <h2>週趨勢（近 12 週）</h2>
+      <div id="chartHost"></div>
+      <div class="legend"><span><i></i>MEM（左軸）</span><span><i class="line"></i>MET-min（右軸）</span><span>虛線：150 / 300 MEM</span></div>
+    </div>
+    <div class="card">
+      <h2>依週分組</h2>
+      <div id="histList"><p class="muted">尚無紀錄。</p></div>
+    </div>
+  </section>
+
+  <!-- ④ 設定 -->
+  <section class="tabpanel" id="tab-set" role="tabpanel">
+    <div class="card">
+      <h2>個人參數</h2>
+      <div class="grid2">
+        <div class="field"><label for="sWeight">體重（kg）</label><input type="number" id="sWeight" min="0" step="0.1" inputmode="decimal"></div>
+        <div class="field"><label for="sAge">年齡</label><input type="number" id="sAge" min="0" step="1" inputmode="numeric"></div>
+        <div class="field"><label for="sRestHR">靜息心率（bpm）</label><input type="number" id="sRestHR" min="0" step="1" inputmode="numeric"></div>
+        <div class="field"><label for="sWeekStart">週起始日</label>
+          <select id="sWeekStart"><option value="1">週一</option><option value="0">週日</option></select>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>心率模組（選用）</h2>
+      <details class="note">
+        <summary>展開心率計算器</summary>
+        <div style="margin-top:10px">
+          <p class="muted" style="margin:0 0 8px">HRmax（Tanaka）= 208 − 0.7 × 年齡；優於 220 − age。</p>
+          <div class="grid2">
+            <div class="field"><label>陸上 HRmax</label><input type="text" id="hrLand" readonly></div>
+            <div class="field"><label for="hrSwimOffset">水中修正（bpm，−13 至 −10）</label><input type="number" id="hrSwimOffset" min="-13" max="-10" step="1" inputmode="numeric"></div>
+          </div>
+          <div class="grid2">
+            <div class="field"><label>水中 HRmax</label><input type="text" id="hrSwim" readonly></div>
+            <div class="field"><label for="hrPct">目標強度（% HRR）</label><input type="number" id="hrPct" min="0" max="100" step="1" value="60" inputmode="numeric"></div>
+          </div>
+          <div class="grid2">
+            <div class="field"><label>Karvonen 目標心率（陸上）</label><input type="text" id="hrTargetLand" readonly></div>
+            <div class="field"><label>Karvonen 目標心率（水中）</label><input type="text" id="hrTargetSwim" readonly></div>
+          </div>
+          <div class="callout">
+            <strong>說明</strong>：DiCarlo 等（1991）發現 tethered swimming 之 peak HR 較年齡預測值低 13 bpm、較跑步機低 11 bpm，但兩者運動後血乳酸相當（8.0 vs 8.1 mmol/L），代表<strong>代謝負荷相同而心率較低</strong>。若直接套用陸上心率區間，將系統性低估游泳強度。<br>
+            <strong>限制</strong>：菁英游泳者的陸／水 HRmax 差距可能僅約 6.7 ± 5.3 bpm，個體差異大。腕式光學心率感測器在水中可靠性差。此修正之證據等級 <span class="tag grade">GRADE: Low</span>（單一橫斷性研究，n=34）。本工具不對各來源數值取平均，預設 −12 bpm 並開放調整。
+          </div>
+        </div>
+      </details>
+    </div>
+
+    <div class="card">
+      <h2>自訂活動項目</h2>
+      <div class="grid2">
+        <div class="field"><label for="cName">名稱</label><input type="text" id="cName" placeholder="例：壺鈴擺盪"></div>
+        <div class="field"><label for="cMet">MET 值</label><input type="number" id="cMet" min="0" step="0.1" inputmode="decimal"></div>
+      </div>
+      <div class="check"><input type="checkbox" id="cStrength"><label for="cStrength" style="margin:0;color:var(--text)">預設計入肌力訓練</label></div>
+      <button class="btn secondary small" id="btnAddCustom">新增自訂項目</button>
+      <div id="customList" style="margin-top:12px"></div>
+    </div>
+
+    <div class="card">
+      <h2>資料管理</h2>
+      <div class="btnrow">
+        <button class="btn secondary small" id="btnExportJson">匯出 JSON</button>
+        <button class="btn secondary small" id="btnExportCsv">匯出 CSV</button>
+        <button class="btn secondary small" id="btnImport">匯入 JSON</button>
+        <button class="btn danger small" id="btnClear">清除所有資料</button>
+      </div>
+      <input type="file" id="fileImport" accept="application/json,.json" class="hidden">
+      <p class="faint" style="margin:10px 0 0">資料儲存在此瀏覽器的 localStorage，不會上傳；清除瀏覽器資料將一併移除。建議定期匯出備份。</p>
+    </div>
+
+    <div class="card">
+      <h2>驗收測試（TC-1 ~ TC-9）</h2>
+      <button class="btn secondary small" id="btnRunTests">執行自我測試</button>
+      <div id="testOut" style="margin-top:12px"></div>
+    </div>
+
+    <div class="card">
+      <h2>版本與時效性</h2>
+      <div id="versionInfo" class="muted"></div>
+      <p class="faint" style="margin:8px 0 0">指引與 Compendium 均會改版，CONFIG 中所有常數已註記版本年份，建議每 2 年重新查核。</p>
+    </div>
+
+    <footer class="refs">
+      <h3>建議量來源</h3>
+      <ul>
+        <li>WHO. <em>Guidelines on Physical Activity and Sedentary Behaviour.</em> Geneva: World Health Organization; 2020.</li>
+        <li>U.S. Department of Health and Human Services. <em>Physical Activity Guidelines for Americans</em>, 2nd edition. 2018.</li>
+      </ul>
+      <h3>MET 值來源</h3>
+      <ul><li>2024 Adult Compendium of Physical Activities (ages 19–59), Arizona State University.</li></ul>
+      <h3>公式來源</h3>
+      <ul>
+        <li>ACSM's Guidelines for Exercise Testing and Prescription（跑步代謝方程式）</li>
+        <li>Tanaka H, et al. <em>J Am Coll Cardiol.</em> 2001（HRmax 公式）</li>
+        <li>DiCarlo LJ, Sparling PB, Millard-Stafford ML, Rupp JC. <em>Int J Sports Med.</em> 1991;12(3):309-12（水中心率修正）</li>
+      </ul>
+      <h3>證據分級</h3>
+      <p style="margin:4px 0 0">本工具採 GRADE（Grading of Recommendations, Assessment, Development and Evaluation）標示建議強度與證據確定性；非建議性質之參考數值另以 [參考測量值]、[公式推導]、[指引慣例] 標籤標示，不適用 GRADE。</p>
+      <div class="disclaimer">
+        本工具提供之數值為族群平均之估算，個體實際能量消耗差異可達 ±20% 以上。MET 為 absolute intensity 指標，未反映個人心肺適能所決定的 relative intensity；心肺適能良好者的實際相對強度可能低於分類值。本工具不構成醫療建議。若有心血管疾病史、慢性病或特殊健康考量，運動處方應由具運動醫學專業之醫師個別評估。
+      </div>
+    </footer>
+  </section>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ==========================================================================
+   CORE:START — 純計算層（無 DOM／無 localStorage 依賴，可於 Node 直接載入測試）
+   ========================================================================== */
+
+/** 所有常數集中於此，便於日後更新；每項均註記版本年份 */
+const CONFIG = {
+  meta: {
+    appVersion: '1.0.0',
+    guidelineWho: 'WHO Guidelines on Physical Activity and Sedentary Behaviour (2020)',
+    guidelinePag: 'US Physical Activity Guidelines for Americans, 2nd ed. (2018)',
+    compendium: '2024 Adult Compendium of Physical Activities (ages 19–59)',
+    acsm: "ACSM's Guidelines for Exercise Testing and Prescription（跑步代謝方程式）",
+    tanaka: 'Tanaka H, et al. J Am Coll Cardiol. 2001',
+    dicarlo: 'DiCarlo LJ, et al. Int J Sports Med. 1991;12(3):309-12',
+    reviewCycleYears: 2
+  },
+
+  /** 3.1 強度分級（absolute intensity, MET-based）[參考測量值] */
+  intensity: {
+    lightMin: 1.6,       // Light: 1.6 – 2.9
+    moderateMin: 3.0,    // Moderate: 3.0 – 5.9
+    vigorousMin: 6.0     // Vigorous: >= 6.0（邊界含 6.0）
+  },
+
+  /** 3.2 等效換算 [指引慣例] — MEM = moderate + 2 × vigorous */
+  vigorousMultiplier: 2,
+
+  /** 3.3 有氧達標門檻（WHO 2020 / US PAG 2018） */
+  aerobic: {
+    memBasic: 150,        // 基本達標下限（含）
+    memAdditional: 300,   // 基本達標上限（含）；> 300 為額外效益
+    vigBasic: 75,
+    vigAdditional: 150,
+    gradeBasic: 'Strong recommendation, Moderate certainty',
+    gradeAdditional: 'Conditional recommendation, Moderate certainty'
+  },
+
+  /** 3.4 MET-minutes 參考帶（輔助指標，非達標判準） */
+  metMinutesBand: { low: 500, high: 1000 },
+
+  /** 3.5 肌力訓練（WHO 2020 成人建議第 3 條；Strong recommendation, Moderate certainty） */
+  strength: {
+    minDays: 2,
+    grade: 'Strong recommendation, Moderate certainty',
+    muscleGroups: [
+      { id: 'legs',      zh: '腿部', en: 'legs' },
+      { id: 'hips',      zh: '髖部', en: 'hips' },
+      { id: 'back',      zh: '背部', en: 'back' },
+      { id: 'abdomen',   zh: '腹部', en: 'abdomen' },
+      { id: 'chest',     zh: '胸部', en: 'chest' },
+      { id: 'shoulders', zh: '肩部', en: 'shoulders' },
+      { id: 'arms',      zh: '手臂', en: 'arms' }
+    ]
+  },
+
+  /** 8. 熱量估算誤差 */
+  kcal: { errorPct: '±15–20%', type: 'gross（總消耗）' },
+
+  /** 6. 心率模組 */
+  hr: {
+    tanakaBase: 208,          // HRmax = 208 − 0.7 × age（Tanaka 2001）
+    tanakaSlope: 0.7,
+    swimOffsetDefault: -12,   // GRADE: Low（DiCarlo 1991, n=34）
+    swimOffsetMin: -13,
+    swimOffsetMax: -10
+  },
+
+  /** 5.3 主觀強度覆寫預設值 */
+  subjective: {
+    moderateDefaultMet: 5.0,
+    vigorousDefaultMet: 7.0,
+    moderateRange: [3.0, 5.9],
+    vigorousMin: 6.0,
+    borg: { moderate: [12, 13], vigorous: [14, 17] },
+    cr10: { moderate: [3, 4], vigorous: [5, 6] }
+  },
+
+  /** 4.2 游泳（2024 Adult Compendium, Water Activities）[參考測量值] */
+  swimStrokes: [
+    { code: '18240', met: 5.8,  zh: '自由式，慢速，休閒',              en: 'Swimming laps, freestyle, slow, recreational' },
+    { code: '18292', met: 5.8,  zh: '捷泳，慢速 30–45 yd/min，中等費力', en: 'Crawl, slow speed, 30–45 yd/min, moderate effort' },
+    { code: '18265', met: 5.3,  zh: '蛙式，休閒',                      en: 'Breaststroke, recreational' },
+    { code: '18255', met: 4.8,  zh: '仰式，休閒',                      en: 'Backstroke, recreational' },
+    { code: '18310', met: 6.0,  zh: '一般戲水式游泳（非來回游）',        en: 'Swimming, leisurely, not lap swimming, general' },
+    { code: '18290', met: 8.0,  zh: '捷泳，中速 ~50 yd/min，高費力',    en: 'Crawl, medium speed, ~50 yd/min, vigorous effort' },
+    { code: '18230', met: 9.8,  zh: '自由式來回游，快速，高費力',        en: 'Laps, freestyle, fast, vigorous effort' },
+    { code: '18280', met: 10.5, zh: '捷泳，快速 ~75 yd/min',           en: 'Crawl, fast, ~75 yd/min' },
+    { code: '18260', met: 10.3, zh: '蛙式，訓練或競賽',                 en: 'Breaststroke, training or competition' },
+    { code: '18250', met: 9.5,  zh: '仰式，訓練或競賽',                 en: 'Backstroke, training or competition' },
+    { code: '18270', met: 13.8, zh: '蝶式，一般',                      en: 'Butterfly, general' },
+    { code: '18294', met: 14.5, zh: '捷泳，菁英競賽 >90 yd/min',        en: 'Crawl, elite, competition, >90 yd/min' }
+  ],
+
+  /** 4.1 / 4.3 活動資料庫 */
+  activities: [
+    { id: 'run',   name: '跑步（依速度動態計算 MET）', met: null, kind: 'run',  group: '跑步' },
+    { id: 'swim',  name: '游泳（混合泳姿加權）',       met: null, kind: 'swim', group: '游泳' },
+    { id: 'walk56',  name: '快走 5.6 km/hr',        met: 4.3, group: '步行' },
+    { id: 'walk64',  name: '快走 6.4 km/hr',        met: 5.0, group: '步行' },
+    { id: 'bike16',  name: '自行車 16–19 km/hr',    met: 6.8, group: '自行車' },
+    { id: 'bike19',  name: '自行車 19–22 km/hr',    met: 8.0, group: '自行車' },
+    { id: 'boulder', name: '抱石／攀岩（一般）',      met: 5.8, group: '攀岩', note: '兼具肌力成分', strengthDefault: true },
+    { id: 'climb',   name: '攀岩（上攀）',           met: 7.5, group: '攀岩', strengthDefault: true },
+    { id: 'wtMod',   name: '重量訓練（一般，moderate effort）', met: 3.5, group: '肌力', note: '計入肌力，亦可計入有氧', strengthDefault: true },
+    { id: 'wtVig',   name: '重量訓練（vigorous effort）',       met: 6.0, group: '肌力', strengthDefault: true },
+    { id: 'aquajog', name: '水中慢跑（vigorous）',   met: 9.8, group: '水域' },
+    { id: 'stairs',  name: '樓梯上行',              met: 8.8, group: '其他' }
+  ]
+};
+
+/** 四捨五入至指定小數位 */
+function round(v, d) {
+  d = (d === undefined) ? 2 : d;
+  const p = Math.pow(10, d);
+  return Math.round((v + Number.EPSILON) * p) / p;
+}
+
+/** 4.1 ACSM 跑步代謝方程式（平地）；speedKmh: km/hr */
+function runningMET(speedKmh) {
+  if (!(speedKmh > 0)) return 0;
+  const speedMPerMin = speedKmh * 1000 / 60;
+  const vo2 = 0.2 * speedMPerMin + 3.5;   // mL/kg/min
+  return vo2 / 3.5;
+}
+
+/** 配速（min/km）→ 速度（km/hr） */
+function paceToSpeedKmh(minPerKm) { return minPerKm > 0 ? 60 / minPerKm : 0; }
+/** 速度（km/hr）→ 配速（min/km） */
+function speedKmhToPace(speedKmh) { return speedKmh > 0 ? 60 / speedKmh : 0; }
+
+/** 3.1 由 MET 判定強度分級；邊界 MET >= 6.0 判為 vigorous */
+function classifyIntensity(met) {
+  if (met >= CONFIG.intensity.vigorousMin) return 'vigorous';
+  if (met >= CONFIG.intensity.moderateMin) return 'moderate';
+  return 'light';
+}
+
+const INTENSITY_ZH = { light: 'Light（輕度）', moderate: 'Moderate（中強度）', vigorous: 'Vigorous（高強度）' };
+
+/** 3.2 單筆活動之 MEM 貢獻：moderate 計 1×、vigorous 計 2×、light 不計 */
+function memContribution(met, minutes) {
+  const c = classifyIntensity(met);
+  if (c === 'vigorous') return CONFIG.vigorousMultiplier * minutes;
+  if (c === 'moderate') return minutes;
+  return 0;
+}
+
+/** 3.4 單筆 MET-minutes */
+function metMinutes(met, minutes) { return met * minutes; }
+
+/** 8. 熱量估算（gross 總消耗） */
+function kcalOf(met, weightKg, minutes) { return met * weightKg * (minutes / 60); }
+
+/** 5.1 混合泳姿線性加權 MET；parts: [{met, pct}]，總和非 100 時自動正規化 */
+function weightedMET(parts) {
+  const total = parts.reduce(function (s, p) { return s + (Number(p.pct) || 0); }, 0);
+  if (total <= 0) return 0;
+  return parts.reduce(function (s, p) { return s + ((Number(p.pct) || 0) / total) * Number(p.met); }, 0);
+}
+
+/** 3.3 有氧達標等級（依 MEM） */
+function aerobicLevel(mem) {
+  if (mem > CONFIG.aerobic.memAdditional) {
+    return { level: 2, key: 'additional', zh: '額外效益', en: 'additional health benefits',
+             grade: CONFIG.aerobic.gradeAdditional, met: true };
+  }
+  if (mem >= CONFIG.aerobic.memBasic) {
+    return { level: 1, key: 'basic', zh: '基本達標', en: 'substantial health benefits',
+             grade: CONFIG.aerobic.gradeBasic, met: true };
+  }
+  return { level: 0, key: 'none', zh: '未達標', en: '', grade: '', met: false };
+}
+
+/** 3.3 高強度單獨計之等級（75 / 150 分鐘） */
+function vigorousOnlyLevel(vigMin) {
+  if (vigMin > CONFIG.aerobic.vigAdditional) return { level: 2, zh: '額外效益' };
+  if (vigMin >= CONFIG.aerobic.vigBasic) return { level: 1, zh: '基本達標' };
+  return { level: 0, zh: '未達標' };
+}
+
+/** 3.5 肌力達標判定；records 為同一週之紀錄陣列 */
+function strengthStatus(records) {
+  const days = {};
+  const covered = {};
+  records.forEach(function (r) {
+    if (!r.isStrength || !r.strengthModerate) return;   // 強度須 moderate 以上
+    days[r.date] = true;
+    (r.muscles || []).forEach(function (m) { covered[m] = true; });
+  });
+  const dayCount = Object.keys(days).length;
+  const coveredList = CONFIG.strength.muscleGroups.map(function (g) { return g.id; })
+    .filter(function (id) { return covered[id]; });
+  const missing = CONFIG.strength.muscleGroups.filter(function (g) { return !covered[g.id]; });
+  const daysOk = dayCount >= CONFIG.strength.minDays;
+  const groupsOk = missing.length === 0;
+  return { days: dayCount, daysOk: daysOk, covered: coveredList, missing: missing,
+           groupsOk: groupsOk, met: daysOk && groupsOk };
+}
+
+/** 3.6 綜合達標燈號 */
+function overallSignal(aerobicMet, strengthMet) {
+  if (aerobicMet && strengthMet) return { color: 'green', dot: '🟢', zh: '有氧與肌力皆達標' };
+  if (aerobicMet || strengthMet) return { color: 'yellow', dot: '🟡', zh: '僅其中一項達標' };
+  return { color: 'red', dot: '🔴', zh: '兩項皆未達標' };
+}
+
+/** 日期工具（本地時間，避免時區位移） */
+function parseDate(dateStr) {
+  const p = String(dateStr).split('-');
+  return new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+}
+function fmtDate(d) {
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return d.getFullYear() + '-' + m + '-' + day;
+}
+/** 10.6 週界處理：回傳該日期所屬週之起始日（startDay: 1=週一, 0=週日） */
+function weekStartOf(dateStr, startDay) {
+  const d = parseDate(dateStr);
+  const diff = (d.getDay() - startDay + 7) % 7;
+  d.setDate(d.getDate() - diff);
+  return fmtDate(d);
+}
+function addDays(dateStr, n) {
+  const d = parseDate(dateStr);
+  d.setDate(d.getDate() + n);
+  return fmtDate(d);
+}
+
+/** 週彙總 */
+function summarizeWeek(records, weightKg) {
+  let modMin = 0, vigMin = 0, mem = 0, mm = 0, kcal = 0;
+  records.forEach(function (r) {
+    const c = classifyIntensity(r.met);
+    if (c === 'moderate') modMin += r.minutes;
+    if (c === 'vigorous') vigMin += r.minutes;
+    mem += memContribution(r.met, r.minutes);
+    mm += metMinutes(r.met, r.minutes);
+    kcal += kcalOf(r.met, weightKg || 0, r.minutes);
+  });
+  const aer = aerobicLevel(mem);
+  const str = strengthStatus(records);
+  return {
+    modMin: modMin, vigMin: vigMin, mem: mem, metMin: mm, kcal: kcal,
+    aerobic: aer, vigorousOnly: vigorousOnlyLevel(vigMin), strength: str,
+    signal: overallSignal(aer.met, str.met)
+  };
+}
+
+/** 6. 心率模組 */
+function hrMaxTanaka(age) { return CONFIG.hr.tanakaBase - CONFIG.hr.tanakaSlope * age; }
+function hrMaxSwim(age, offset) {
+  const off = (offset === undefined || offset === null) ? CONFIG.hr.swimOffsetDefault : offset;
+  return hrMaxTanaka(age) + off;   // offset 為負值
+}
+function karvonen(hrRest, hrMax, intensityPercent) {
+  return hrRest + (intensityPercent / 100) * (hrMax - hrRest);
+}
+
+/** 5.3 RPE → 強度判定 */
+function rpeToIntensity(scale, value) {
+  const t = CONFIG.subjective[scale];
+  if (!t) return null;
+  if (value >= t.vigorous[0] && value <= t.vigorous[1]) return 'vigorous';
+  if (value >= t.moderate[0] && value <= t.moderate[1]) return 'moderate';
+  if (value > t.vigorous[1]) return 'vigorous';
+  return 'light';
+}
+
+/* ---------------------- 第 11 節 驗收測試案例 ---------------------- */
+function runSelfTests() {
+  const T = [];
+  const near = function (a, b, tol) { return Math.abs(a - b) <= (tol === undefined ? 0.005 : tol); };
+  const rec = function (o) {
+    return { date: o.date, met: o.met, minutes: o.minutes,
+             isStrength: !!o.isStrength, strengthModerate: o.strengthModerate !== false,
+             muscles: o.muscles || [] };
+  };
+
+  // TC-1：跑步 MET 計算
+  (function () {
+    const met = runningMET(9);
+    const mem = memContribution(met, 20);
+    const mm = metMinutes(met, 20);
+    T.push({ id: 'TC-1', name: '跑步 MET 計算（9 km/hr, 20 min）',
+      expected: 'MET=9.57 / Vigorous / MEM=40 / MET-min=191.4',
+      actual: 'MET=' + round(met, 2) + ' / ' + classifyIntensity(met) + ' / MEM=' + round(mem, 2) + ' / MET-min=' + round(mm, 1),
+      pass: near(round(met, 2), 9.57) && classifyIntensity(met) === 'vigorous' && near(mem, 40) && near(round(mm, 1), 191.4, 0.05) });
+  })();
+
+  // TC-2：跑步達標判定（9 km/hr × 20 min × 4 次）
+  (function () {
+    const met = runningMET(9);
+    const recs = [0, 1, 2, 3].map(function (i) { return rec({ date: '2026-08-1' + i, met: met, minutes: 20 }); });
+    const s = summarizeWeek(recs, 70);
+    T.push({ id: 'TC-2', name: '跑步達標判定（× 4 次）',
+      expected: 'MEM=160 / 基本達標 / MET-min≈766',
+      actual: 'MEM=' + round(s.mem, 2) + ' / ' + s.aerobic.zh + ' / MET-min=' + round(s.metMin, 0),
+      pass: near(s.mem, 160) && s.aerobic.key === 'basic' && Math.abs(s.metMin - 766) <= 1 });
+  })();
+
+  // TC-3：游泳混合泳姿加權
+  (function () {
+    const met = weightedMET([{ met: 5.8, pct: 60 }, { met: 5.3, pct: 40 }]);
+    const mem = memContribution(met, 40);
+    const mm = metMinutes(met, 40);
+    T.push({ id: 'TC-3', name: '游泳混合泳姿加權（自由式 60% + 蛙式 40%, 40 min）',
+      expected: '加權 MET=5.60 / Moderate / MEM=40 / MET-min=224',
+      actual: '加權 MET=' + round(met, 2) + ' / ' + classifyIntensity(met) + ' / MEM=' + round(mem, 2) + ' / MET-min=' + round(mm, 2),
+      pass: near(round(met, 2), 5.60) && classifyIntensity(met) === 'moderate' && near(mem, 40) && near(round(mm, 2), 224, 0.01) });
+  })();
+
+  // TC-4：綜合計算（TC-2 + TC-3）
+  (function () {
+    const runMet = runningMET(9);
+    const swimMet = weightedMET([{ met: 5.8, pct: 60 }, { met: 5.3, pct: 40 }]);
+    const recs = [0, 1, 2, 3].map(function (i) { return rec({ date: '2026-08-1' + i, met: runMet, minutes: 20 }); });
+    recs.push(rec({ date: '2026-08-14', met: swimMet, minutes: 40 }));
+    const s = summarizeWeek(recs, 70);
+    const inBand = s.metMin >= CONFIG.metMinutesBand.low && s.metMin <= CONFIG.metMinutesBand.high;
+    T.push({ id: 'TC-4', name: '綜合計算（TC-2 + TC-3）',
+      expected: 'MEM=200 / 基本達標 / MET-min≈990（落在 500–1000 參考帶）',
+      actual: 'MEM=' + round(s.mem, 2) + ' / ' + s.aerobic.zh + ' / MET-min=' + round(s.metMin, 0) + '（參考帶內：' + (inBand ? '是' : '否') + '）',
+      pass: near(s.mem, 200) && s.aerobic.key === 'basic' && Math.abs(s.metMin - 990) <= 1 && inBand });
+  })();
+
+  // TC-5：燈號邏輯（有氧達標、肌力 0 天）
+  (function () {
+    const runMet = runningMET(9);
+    const swimMet = weightedMET([{ met: 5.8, pct: 60 }, { met: 5.3, pct: 40 }]);
+    const recs = [0, 1, 2, 3].map(function (i) { return rec({ date: '2026-08-1' + i, met: runMet, minutes: 20 }); });
+    recs.push(rec({ date: '2026-08-14', met: swimMet, minutes: 40 }));
+    const s = summarizeWeek(recs, 70);
+    T.push({ id: 'TC-5', name: '燈號邏輯（有氧達標 + 肌力 0 天）',
+      expected: '🟡 黃燈（不得為綠燈）',
+      actual: s.signal.dot + ' ' + s.signal.zh + '（有氧：' + (s.aerobic.met ? '達標' : '未達標') + '、肌力：' + (s.strength.met ? '達標' : '未達標') + '）',
+      pass: s.signal.color === 'yellow' && s.aerobic.met === true && s.strength.met === false });
+  })();
+
+  // TC-6：MET 分級邊界
+  (function () {
+    const a = classifyIntensity(5.9), b = classifyIntensity(6.0);
+    T.push({ id: 'TC-6', name: 'MET 分級邊界（5.9 / 6.0）',
+      expected: '5.9→moderate；6.0→vigorous',
+      actual: '5.9→' + a + '；6.0→' + b,
+      pass: a === 'moderate' && b === 'vigorous' });
+  })();
+
+  // TC-7：MEM 閾值邊界
+  (function () {
+    const v = [149, 150, 300, 301].map(function (m) { return aerobicLevel(m).zh; });
+    T.push({ id: 'TC-7', name: 'MEM 閾值邊界（149 / 150 / 300 / 301）',
+      expected: '未達標 / 基本達標 / 基本達標 / 額外效益',
+      actual: v.join(' / '),
+      pass: v[0] === '未達標' && v[1] === '基本達標' && v[2] === '基本達標' && v[3] === '額外效益' });
+  })();
+
+  // TC-8：肌群覆蓋（2 天但腹部未覆蓋）
+  (function () {
+    const recs = [
+      rec({ date: '2026-08-10', met: 3.5, minutes: 45, isStrength: true, muscles: ['legs', 'hips', 'back'] }),
+      rec({ date: '2026-08-13', met: 3.5, minutes: 45, isStrength: true, muscles: ['chest', 'shoulders', 'arms'] })
+    ];
+    const s = strengthStatus(recs);
+    const missingZh = s.missing.map(function (g) { return g.zh; }).join('、');
+    T.push({ id: 'TC-8', name: '肌群覆蓋（週一腿髖背、週四胸肩臂）',
+      expected: '天數 2 天達標、腹部未覆蓋 → 肌力未達標',
+      actual: '天數=' + s.days + '（' + (s.daysOk ? '達標' : '未達標') + '）、缺漏肌群=' + (missingZh || '無') + ' → 肌力' + (s.met ? '達標' : '未達標'),
+      pass: s.days === 2 && s.daysOk === true && s.groupsOk === false && s.met === false &&
+            s.missing.length === 1 && s.missing[0].id === 'abdomen' });
+  })();
+
+  // TC-9：短時長活動（不得設最小時長門檻）
+  (function () {
+    const met = 5.0, minutes = 7;
+    const mem = memContribution(met, minutes);
+    T.push({ id: 'TC-9', name: '短時長活動（快走 6.4 km/hr, MET 5.0, 7 分鐘）',
+      expected: '正常計入，MEM 貢獻 = 7',
+      actual: 'MEM 貢獻 = ' + round(mem, 2) + '（' + classifyIntensity(met) + '，MET-min=' + round(metMinutes(met, minutes), 1) + '）',
+      pass: near(mem, 7) });
+  })();
+
+  return T;
+}
+/* ==========================================================================
+   CORE:END
+   ========================================================================== */
+
+/* ==========================================================================
+   APP — UI 與持久化層
+   ========================================================================== */
+(function () {
+  'use strict';
+  if (typeof document === 'undefined') return;   // Node 測試環境不執行 UI
+
+  const LS = { rec: 'wex.records.v1', set: 'wex.settings.v1', cus: 'wex.custom.v1' };
+  const $ = function (id) { return document.getElementById(id); };
+  const esc = function (s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  };
+
+  /* ---------- 狀態 ---------- */
+  let records = [];
+  let custom = [];
+  let settings = { weightKg: 65, age: 35, restHR: 60, weekStart: 1, hrSwimOffset: CONFIG.hr.swimOffsetDefault };
+  let viewWeekStart = null;      // 儀表板檢視之週
+  let editingId = null;
+  let ovMode = 'talk';
+  let selectedMuscles = {};
+  let swimPct = {};              // code -> %
+
+  function load() {
+    try {
+      const r = localStorage.getItem(LS.rec); if (r) records = JSON.parse(r) || [];
+      const s = localStorage.getItem(LS.set); if (s) Object.assign(settings, JSON.parse(s) || {});
+      const c = localStorage.getItem(LS.cus); if (c) custom = JSON.parse(c) || [];
+    } catch (e) { console.warn('讀取 localStorage 失敗', e); }
+  }
+  function saveRecords() { try { localStorage.setItem(LS.rec, JSON.stringify(records)); } catch (e) { toast('儲存失敗'); } }
+  function saveSettings() { try { localStorage.setItem(LS.set, JSON.stringify(settings)); } catch (e) {} }
+  function saveCustom() { try { localStorage.setItem(LS.cus, JSON.stringify(custom)); } catch (e) {} }
+
+  let toastTimer = null;
+  function toast(msg) {
+    const t = $('toast'); t.textContent = msg; t.classList.add('show');
+    clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.classList.remove('show'); }, 1800);
+  }
+
+  function allActivities() {
+    return CONFIG.activities.concat(custom.map(function (c) {
+      return { id: c.id, name: c.name + '（自訂）', met: c.met, group: '自訂', strengthDefault: !!c.strength };
+    }));
+  }
+  function findActivity(id) {
+    const list = allActivities();
+    for (let i = 0; i < list.length; i++) if (list[i].id === id) return list[i];
+    return null;
+  }
+
+  /* ---------- 分頁 ---------- */
+  function switchTab(name) {
+    document.querySelectorAll('nav.tabs button').forEach(function (b) {
+      b.setAttribute('aria-selected', String(b.dataset.tab === name));
+    });
+    document.querySelectorAll('.tabpanel').forEach(function (p) {
+      p.classList.toggle('active', p.id === 'tab-' + name);
+    });
+    window.scrollTo(0, 0);
+    if (name === 'dash') renderDash();
+    if (name === 'hist') renderHistory();
+  }
+  document.querySelectorAll('nav.tabs button').forEach(function (b) {
+    b.addEventListener('click', function () { switchTab(b.dataset.tab); });
+  });
+
+  /* ---------- 儀表板 ---------- */
+  function recordsOfWeek(ws) {
+    return records.filter(function (r) { return weekStartOf(r.date, settings.weekStart) === ws; });
+  }
+  function pct(v, max) { return Math.max(0, Math.min(100, v / max * 100)); }
+
+  function renderDash() {
+    if (!viewWeekStart) viewWeekStart = weekStartOf(fmtDate(new Date()), settings.weekStart);
+    const recs = recordsOfWeek(viewWeekStart);
+    const s = summarizeWeek(recs, settings.weightKg);
+    const end = addDays(viewWeekStart, 6);
+    const isThis = viewWeekStart === weekStartOf(fmtDate(new Date()), settings.weekStart);
+    // 結束日省略年份，避免窄螢幕折行
+    $('dashWeekLabel').textContent = viewWeekStart + ' ~ ' + end.slice(5) + (isThis ? '（本週）' : '');
+
+    // 綜合燈號
+    $('sigDot').textContent = s.signal.dot;
+    $('sigText').textContent = s.signal.zh;
+    $('sigDetail').textContent = '有氧' + (s.aerobic.met ? '達標' : '未達標') + ' · 肌力' + (s.strength.met ? '達標' : '未達標');
+
+    // 有氧
+    $('memVal').textContent = round(s.mem, 1);
+    $('memFill').style.width = pct(s.mem, 400) + '%';
+    const st = $('memStatus');
+    st.textContent = s.aerobic.zh;
+    st.className = 'status lv' + s.aerobic.level;
+    $('memTagEn').textContent = s.aerobic.en ? s.aerobic.en + ' — ' + s.aerobic.grade : '—';
+    $('memBreakdown').textContent = '（中強度 ' + round(s.modMin, 0) + ' 分 + 2 × 高強度 ' + round(s.vigMin, 0) + ' 分）';
+
+    // 高強度單獨計
+    $('vigVal').textContent = round(s.vigMin, 0);
+    $('vigFill').style.width = pct(s.vigMin, 200) + '%';
+    const vs = $('vigStatus'); vs.textContent = s.vigorousOnly.zh; vs.className = 'status lv' + s.vigorousOnly.level;
+
+    // MET-min
+    $('metMinVal').textContent = round(s.metMin, 0);
+    $('metMinFill').style.width = pct(s.metMin, 1500) + '%';
+    $('metMinBand').textContent = s.metMin >= CONFIG.metMinutesBand.low && s.metMin <= CONFIG.metMinutesBand.high
+      ? '落在參考帶 500–1000 內' : '參考帶 500–1000';
+    $('kcalVal').textContent = round(s.kcal, 0);
+
+    // 肌力
+    $('strDays').textContent = s.strength.days;
+    const ss = $('strStatus');
+    ss.textContent = s.strength.met ? '達標' : '未達標';
+    ss.className = 'status lv' + (s.strength.met ? 1 : 0);
+    $('muscleGrid').innerHTML = CONFIG.strength.muscleGroups.map(function (g) {
+      const done = s.strength.covered.indexOf(g.id) >= 0;
+      return '<div class="muscle' + (done ? ' done' : '') + '"><b>' + g.zh + '</b><em>' + g.en + '</em></div>';
+    }).join('');
+    $('muscleMissing').textContent = s.strength.missing.length
+      ? '缺漏肌群：' + s.strength.missing.map(function (g) { return g.zh; }).join('、') +
+        (s.strength.daysOk ? '（訓練天數已達標）' : '；訓練天數尚未達 2 天')
+      : (s.strength.daysOk ? '7 大肌群已全數涵蓋。' : '7 大肌群已全數涵蓋，但訓練天數尚未達 2 天。');
+
+    $('dashRecords').innerHTML = recs.length ? recs.slice().sort(function (a, b) {
+      return a.date < b.date ? -1 : 1;
+    }).map(recRow).join('') : '<p class="muted">本週尚無紀錄。</p>';
+    bindRecButtons($('dashRecords'));
+  }
+
+  function recRow(r) {
+    const c = classifyIntensity(r.met);
+    const badge = c === 'vigorous' ? 'Vigorous' : (c === 'moderate' ? 'Moderate' : 'Light');
+    const src = r.metSource === 'subjective' ? '<span class="tag">主觀判定</span>'
+      : (r.metSource === 'formula' ? '<span class="tag">公式</span>'
+      : (r.metSource === 'weighted' ? '<span class="tag">泳姿加權</span>' : '<span class="tag">查表</span>'));
+    const mus = (r.isStrength && r.muscles && r.muscles.length)
+      ? ' · 肌群：' + r.muscles.map(function (id) {
+          const g = CONFIG.strength.muscleGroups.filter(function (x) { return x.id === id; })[0];
+          return g ? g.zh : id;
+        }).join('/') + (r.strengthModerate ? '' : '（強度未達 moderate，不計）') : '';
+    return '<div class="rec" data-id="' + esc(r.id) + '">' +
+      '<div class="l"><b>' + esc(r.name) + '</b>' +
+      '<span>' + esc(r.date) + ' · ' + round(r.minutes, 0) + ' 分 · MET ' + round(r.met, 2) + ' · ' + badge + ' ' + src + esc(mus) +
+      (r.note ? ' · ' + esc(r.note) : '') + '</span></div>' +
+      '<div class="r"><div class="v">MEM ' + round(memContribution(r.met, r.minutes), 1) + '</div>' +
+      '<div class="v faint">' + round(metMinutes(r.met, r.minutes), 0) + ' MET-min</div>' +
+      '<button class="linkbtn" data-act="edit">編輯</button><button class="linkbtn" data-act="del">刪除</button></div></div>';
+  }
+
+  function bindRecButtons(host) {
+    host.querySelectorAll('button[data-act]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        const id = b.closest('.rec').dataset.id;
+        if (b.dataset.act === 'del') {
+          if (confirm('確定刪除此筆紀錄？')) {
+            records = records.filter(function (r) { return r.id !== id; });
+            saveRecords(); renderDash(); renderHistory(); toast('已刪除');
+          }
+        } else {
+          startEdit(id);
+        }
+      });
+    });
+  }
+
+  $('weekPrev').addEventListener('click', function () { viewWeekStart = addDays(viewWeekStart, -7); renderDash(); });
+  $('weekNext').addEventListener('click', function () { viewWeekStart = addDays(viewWeekStart, 7); renderDash(); });
+
+  /* ---------- 新增／編輯表單 ---------- */
+  function buildActivitySelect() {
+    const list = allActivities();
+    const groups = [];
+    list.forEach(function (a) { if (groups.indexOf(a.group) < 0) groups.push(a.group); });
+    const cur = $('fActivity').value;
+    $('fActivity').innerHTML = groups.map(function (g) {
+      return '<optgroup label="' + esc(g) + '">' + list.filter(function (a) { return a.group === g; })
+        .map(function (a) {
+          return '<option value="' + esc(a.id) + '">' + esc(a.name) + (a.met ? '（MET ' + a.met + '）' : '') + '</option>';
+        }).join('') + '</optgroup>';
+    }).join('');
+    if (cur && findActivity(cur)) $('fActivity').value = cur;
+  }
+
+  function buildSwimRows() {
+    $('swimRows').innerHTML = CONFIG.swimStrokes.map(function (s) {
+      return '<div class="rec" style="border-bottom:1px dashed var(--border)">' +
+        '<div class="l"><b>' + esc(s.zh) + '</b><span>MET ' + s.met + ' · code ' + s.code + ' · ' + esc(s.en) + '</span></div>' +
+        '<div class="r" style="width:96px"><input type="number" min="0" step="5" inputmode="numeric" ' +
+        'data-swim="' + s.code + '" data-met="' + s.met + '" value="' + (swimPct[s.code] || '') + '" placeholder="0"> ' +
+        '</div></div>';
+    }).join('');
+    $('swimRows').querySelectorAll('input[data-swim]').forEach(function (inp) {
+      inp.addEventListener('input', function () {
+        swimPct[inp.dataset.swim] = Number(inp.value) || 0;
+        updatePreview();
+      });
+    });
+  }
+
+  function buildMuscleChips() {
+    $('muscleChips').innerHTML = CONFIG.strength.muscleGroups.map(function (g) {
+      return '<span class="chip' + (selectedMuscles[g.id] ? ' on' : '') + '" data-muscle="' + g.id + '">' + g.zh + '</span>';
+    }).join('');
+    $('muscleChips').querySelectorAll('[data-muscle]').forEach(function (c) {
+      c.addEventListener('click', function () {
+        const id = c.dataset.muscle;
+        selectedMuscles[id] = !selectedMuscles[id];
+        c.classList.toggle('on', !!selectedMuscles[id]);
+      });
+    });
+  }
+
+  function currentActivity() { return findActivity($('fActivity').value); }
+
+  function syncModules() {
+    const a = currentActivity();
+    const kind = a ? a.kind : null;
+    $('modRun').classList.toggle('hidden', kind !== 'run');
+    $('modSwim').classList.toggle('hidden', kind !== 'swim');
+    $('modOverride').classList.toggle('hidden', !$('fOverride').checked);
+    $('modStrength').classList.toggle('hidden', !$('fIsStrength').checked);
+  }
+
+  /** 依目前表單計算 MET 與來源 */
+  function computeMet() {
+    if ($('fOverride').checked) {
+      const m = Number($('fOvMet').value);
+      return { met: m > 0 ? m : 0, source: 'subjective' };
+    }
+    const a = currentActivity();
+    if (!a) return { met: 0, source: 'table' };
+    if (a.kind === 'run') {
+      const sp = Number($('fSpeed').value);
+      return { met: runningMET(sp), source: 'formula' };
+    }
+    if (a.kind === 'swim') {
+      const parts = CONFIG.swimStrokes.map(function (s) { return { met: s.met, pct: swimPct[s.code] || 0 }; });
+      return { met: weightedMET(parts), source: 'weighted' };
+    }
+    return { met: a.met || 0, source: 'table' };
+  }
+
+  function updatePreview() {
+    syncModules();
+    const a = currentActivity();
+    const minutes = Number($('fMinutes').value) || 0;
+    const r = computeMet();
+    const met = r.met;
+
+    if (a && a.kind === 'run') {
+      const sp = Number($('fSpeed').value);
+      $('runMetLive').textContent = sp > 0
+        ? '速度 ' + round(sp, 2) + ' km/hr ≈ 配速 ' + round(speedKmhToPace(sp), 2) + ' min/km → MET = ' + round(runningMET(sp), 2)
+        : '請輸入速度或配速。';
+    }
+    if (a && a.kind === 'swim') {
+      const total = CONFIG.swimStrokes.reduce(function (s, x) { return s + (swimPct[x.code] || 0); }, 0);
+      $('swimSum').textContent = total > 0
+        ? '佔比總和 ' + round(total, 1) + '%' + (Math.abs(total - 100) > 0.01 ? '（非 100%，已自動正規化）' : '') +
+          ' → 加權 MET = ' + round(weightedMET(CONFIG.swimStrokes.map(function (s) { return { met: s.met, pct: swimPct[s.code] || 0 }; })), 2)
+        : '尚未輸入任何泳姿佔比。';
+    }
+
+    if (!(met > 0) || !(minutes > 0)) {
+      $('pvMet').textContent = met > 0 ? round(met, 2) : '—';
+      $('pvIntensity').textContent = met > 0 ? INTENSITY_ZH[classifyIntensity(met)].split('（')[0] : '—';
+      $('pvMem').textContent = '—'; $('pvMetMin').textContent = '—'; $('pvExtra').textContent = '';
+      return;
+    }
+    const c = classifyIntensity(met);
+    $('pvMet').textContent = round(met, 2);
+    $('pvIntensity').textContent = INTENSITY_ZH[c].split('（')[0];
+    $('pvMem').textContent = round(memContribution(met, minutes), 1);
+    $('pvMetMin').textContent = round(metMinutes(met, minutes), 1);
+    $('pvExtra').textContent = INTENSITY_ZH[c] + '　估計熱量 ' + round(kcalOf(met, settings.weightKg, minutes), 0) +
+      ' kcal（gross 總消耗，±15–20%）' + (c === 'light' ? '　※ 輕度活動不計入 MEM' : '') +
+      (r.source === 'subjective' ? '　※ MET 來源：主觀判定' : '');
+  }
+
+  ['fMinutes', 'fActivity', 'fOvMet', 'fSpeed'].forEach(function (id) {
+    $(id).addEventListener('input', updatePreview);
+  });
+  $('fActivity').addEventListener('change', function () {
+    const a = currentActivity();
+    if (a && a.strengthDefault) { $('fIsStrength').checked = true; }
+    updatePreview();
+  });
+  $('fSpeed').addEventListener('input', function () {
+    const sp = Number($('fSpeed').value);
+    $('fPace').value = sp > 0 ? round(speedKmhToPace(sp), 2) : '';
+    updatePreview();
+  });
+  $('fPace').addEventListener('input', function () {
+    const p = Number($('fPace').value);
+    $('fSpeed').value = p > 0 ? round(paceToSpeedKmh(p), 2) : '';
+    updatePreview();
+  });
+  $('fOverride').addEventListener('change', function () { applyOverrideDefaults(); updatePreview(); });
+  $('fIsStrength').addEventListener('change', syncModules);
+  $('fTalk').addEventListener('change', applyOverrideDefaults);
+  $('fRpe').addEventListener('input', applyOverrideDefaults);
+  document.querySelectorAll('[data-ovmode]').forEach(function (c) {
+    c.addEventListener('click', function () {
+      ovMode = c.dataset.ovmode;
+      document.querySelectorAll('[data-ovmode]').forEach(function (x) { x.classList.toggle('on', x === c); });
+      $('ovTalkWrap').classList.toggle('hidden', ovMode !== 'talk');
+      $('ovRpeWrap').classList.toggle('hidden', ovMode === 'talk');
+      $('rpeHint').textContent = ovMode === 'borg'
+        ? 'Borg 6–20：12–13 → Moderate；14–17 → Vigorous'
+        : 'CR10：3–4 → Moderate；5–6 → Vigorous';
+      applyOverrideDefaults();
+    });
+  });
+
+  /** 依 talk test / RPE 判定強度並填入預設 MET */
+  function applyOverrideDefaults() {
+    if (!$('fOverride').checked) { syncModules(); return; }
+    let intensity = 'moderate';
+    if (ovMode === 'talk') intensity = $('fTalk').value;
+    else {
+      const v = Number($('fRpe').value);
+      intensity = rpeToIntensity(ovMode, v) || 'moderate';
+    }
+    const sub = CONFIG.subjective;
+    if (intensity === 'vigorous') {
+      $('ovRange').textContent = '≥ ' + sub.vigorousMin.toFixed(1);
+      $('fOvMet').min = sub.vigorousMin; $('fOvMet').removeAttribute('max');
+      if (!$('fOvMet').dataset.touched) $('fOvMet').value = sub.vigorousDefaultMet;
+    } else if (intensity === 'moderate') {
+      $('ovRange').textContent = sub.moderateRange[0].toFixed(1) + '–' + sub.moderateRange[1].toFixed(1);
+      $('fOvMet').min = sub.moderateRange[0]; $('fOvMet').max = sub.moderateRange[1];
+      if (!$('fOvMet').dataset.touched) $('fOvMet').value = sub.moderateDefaultMet;
+    } else {
+      $('ovRange').textContent = '< 3.0（Light）';
+      if (!$('fOvMet').dataset.touched) $('fOvMet').value = 2.5;
+    }
+    syncModules();
+    updatePreview();
+  }
+  $('fOvMet').addEventListener('input', function () { $('fOvMet').dataset.touched = '1'; });
+
+  function resetForm() {
+    editingId = null;
+    $('formTitle').textContent = '新增紀錄';
+    $('btnSave').textContent = '儲存紀錄';
+    $('btnCancelEdit').classList.add('hidden');
+    $('fDate').value = fmtDate(new Date());
+    $('fMinutes').value = '';
+    $('fSpeed').value = ''; $('fPace').value = '';
+    $('fNote').value = '';
+    $('fOverride').checked = false;
+    $('fIsStrength').checked = false;
+    $('fStrengthModerate').checked = true;
+    delete $('fOvMet').dataset.touched;
+    selectedMuscles = {}; swimPct = {};
+    buildMuscleChips(); buildSwimRows();
+    updatePreview();
+  }
+
+  function startEdit(id) {
+    const r = records.filter(function (x) { return x.id === id; })[0];
+    if (!r) return;
+    editingId = id;
+    $('formTitle').textContent = '編輯紀錄';
+    $('btnSave').textContent = '更新紀錄';
+    $('btnCancelEdit').classList.remove('hidden');
+    $('fDate').value = r.date;
+    $('fMinutes').value = r.minutes;
+    if (findActivity(r.activityId)) $('fActivity').value = r.activityId;
+    $('fNote').value = r.note || '';
+    $('fIsStrength').checked = !!r.isStrength;
+    $('fStrengthModerate').checked = r.strengthModerate !== false;
+    selectedMuscles = {}; (r.muscles || []).forEach(function (m) { selectedMuscles[m] = true; });
+    swimPct = {}; if (r.meta && r.meta.swimPct) Object.assign(swimPct, r.meta.swimPct);
+    if (r.meta && r.meta.speedKmh) { $('fSpeed').value = r.meta.speedKmh; $('fPace').value = round(speedKmhToPace(r.meta.speedKmh), 2); }
+    $('fOverride').checked = r.metSource === 'subjective';
+    if (r.metSource === 'subjective') { $('fOvMet').value = r.met; $('fOvMet').dataset.touched = '1'; }
+    buildMuscleChips(); buildSwimRows();
+    switchTab('add');
+    updatePreview();
+  }
+  $('btnCancelEdit').addEventListener('click', function () { resetForm(); toast('已取消編輯'); });
+
+  $('btnSave').addEventListener('click', function () {
+    const a = currentActivity();
+    const minutes = Number($('fMinutes').value);
+    const date = $('fDate').value;
+    if (!date) { toast('請選擇日期'); return; }
+    if (!(minutes > 0)) { toast('請輸入時長（分鐘）'); return; }
+    const r = computeMet();
+    if (!(r.met > 0)) { toast('MET 無法計算，請檢查輸入'); return; }
+    const isStrength = $('fIsStrength').checked;
+    const muscles = Object.keys(selectedMuscles).filter(function (k) { return selectedMuscles[k]; });
+    if (isStrength && muscles.length === 0) { toast('請選擇本次訓練之肌群'); return; }
+
+    const obj = {
+      id: editingId || ('r' + Date.now() + Math.random().toString(36).slice(2, 7)),
+      date: date,
+      activityId: a ? a.id : 'custom',
+      name: a ? a.name.replace('（自訂）', '') : '活動',
+      met: r.met,
+      metSource: r.source,
+      minutes: minutes,
+      isStrength: isStrength,
+      strengthModerate: $('fStrengthModerate').checked,
+      muscles: muscles,
+      note: $('fNote').value.trim(),
+      meta: {}
+    };
+    if (a && a.kind === 'run') obj.meta.speedKmh = Number($('fSpeed').value) || null;
+    if (a && a.kind === 'swim') obj.meta.swimPct = JSON.parse(JSON.stringify(swimPct));
+    if (r.source === 'subjective') obj.meta.subjective = { mode: ovMode, talk: $('fTalk').value, rpe: Number($('fRpe').value) || null };
+
+    if (editingId) {
+      records = records.map(function (x) { return x.id === editingId ? obj : x; });
+      toast('已更新');
+    } else {
+      records.push(obj);
+      toast('已儲存');
+    }
+    saveRecords();
+    viewWeekStart = weekStartOf(date, settings.weekStart);
+    resetForm();
+    switchTab('dash');
+  });
+
+  /* ---------- 歷史紀錄 ---------- */
+  function weeksOf(records) {
+    const map = {};
+    records.forEach(function (r) {
+      const ws = weekStartOf(r.date, settings.weekStart);
+      (map[ws] = map[ws] || []).push(r);
+    });
+    return Object.keys(map).sort().reverse().map(function (ws) { return { ws: ws, recs: map[ws] }; });
+  }
+
+  function renderHistory() {
+    const weeks = weeksOf(records);
+    $('histList').innerHTML = weeks.length ? weeks.map(function (w) {
+      const s = summarizeWeek(w.recs, settings.weightKg);
+      return '<div class="weekhead"><b>' + w.ws + ' ~ ' + addDays(w.ws, 6) + '</b>' +
+        '<span class="muted">' + s.signal.dot + ' MEM ' + round(s.mem, 0) + ' · ' + round(s.metMin, 0) + ' MET-min · 肌力 ' + s.strength.days + ' 天</span></div>' +
+        w.recs.slice().sort(function (a, b) { return a.date < b.date ? -1 : 1; }).map(recRow).join('');
+    }).join('') : '<p class="muted">尚無紀錄。</p>';
+    bindRecButtons($('histList'));
+    renderChart(weeks);
+  }
+
+  /** 純 SVG 週趨勢圖（MEM 柱狀＋MET-min 折線，雙軸） */
+  function renderChart(weeks) {
+    const data = weeks.slice(0, 12).reverse().map(function (w) {
+      const s = summarizeWeek(w.recs, settings.weightKg);
+      return { ws: w.ws, mem: s.mem, mm: s.metMin };
+    });
+    if (!data.length) { $('chartHost').innerHTML = '<p class="muted">尚無資料。</p>'; return; }
+    const W = 680, H = 240, padL = 38, padR = 44, padT = 14, padB = 34;
+    const iw = W - padL - padR, ih = H - padT - padB;
+    const maxMem = Math.max(300, Math.ceil(Math.max.apply(null, data.map(function (d) { return d.mem; })) / 50) * 50);
+    const maxMm = Math.max(1000, Math.ceil(Math.max.apply(null, data.map(function (d) { return d.mm; })) / 250) * 250);
+    const bw = iw / data.length;
+    const yMem = function (v) { return padT + ih - (v / maxMem) * ih; };
+    const yMm = function (v) { return padT + ih - (v / maxMm) * ih; };
+
+    let svg = '<svg class="chart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="週趨勢圖">';
+    svg += '<line x1="' + padL + '" y1="' + (padT + ih) + '" x2="' + (padL + iw) + '" y2="' + (padT + ih) + '" stroke="var(--border-strong)"/>';
+    [150, 300].forEach(function (v) {
+      svg += '<line x1="' + padL + '" y1="' + yMem(v) + '" x2="' + (padL + iw) + '" y2="' + yMem(v) +
+        '" stroke="var(--border-strong)" stroke-dasharray="4 3"/>' +
+        '<text x="' + (padL - 4) + '" y="' + (yMem(v) + 4) + '" text-anchor="end" font-size="10" fill="var(--text-faint)">' + v + '</text>';
+    });
+    svg += '<text x="' + (padL - 4) + '" y="' + (padT + ih + 4) + '" text-anchor="end" font-size="10" fill="var(--text-faint)">0</text>';
+    svg += '<text x="' + (padL + iw + 4) + '" y="' + (padT + 8) + '" font-size="10" fill="var(--text-faint)">' + maxMm + '</text>';
+    data.forEach(function (d, i) {
+      const x = padL + i * bw + bw * 0.2, w = bw * 0.6;
+      const y = yMem(Math.min(d.mem, maxMem));
+      svg += '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + (padT + ih - y) + '" fill="var(--accent)" rx="2"/>';
+      svg += '<text x="' + (padL + i * bw + bw / 2) + '" y="' + (H - 12) + '" text-anchor="middle" font-size="9" fill="var(--text-faint)">' +
+        d.ws.slice(5) + '</text>';
+    });
+    const pts = data.map(function (d, i) { return (padL + i * bw + bw / 2) + ',' + yMm(Math.min(d.mm, maxMm)); }).join(' ');
+    svg += '<polyline points="' + pts + '" fill="none" stroke="var(--text-muted)" stroke-width="1.6"/>';
+    data.forEach(function (d, i) {
+      svg += '<circle cx="' + (padL + i * bw + bw / 2) + '" cy="' + yMm(Math.min(d.mm, maxMm)) + '" r="2.6" fill="var(--text-muted)"/>';
+    });
+    svg += '</svg>';
+    $('chartHost').innerHTML = svg;
+  }
+
+  /* ---------- 設定 ---------- */
+  function bindSetting(id, key, cast) {
+    $(id).addEventListener('input', function () {
+      settings[key] = cast($(id).value);
+      saveSettings();
+      if (key === 'weekStart') { viewWeekStart = weekStartOf(fmtDate(new Date()), settings.weekStart); }
+      renderHR(); renderDash(); renderHistory();
+    });
+  }
+  function renderSettings() {
+    $('sWeight').value = settings.weightKg;
+    $('sAge').value = settings.age;
+    $('sRestHR').value = settings.restHR;
+    $('sWeekStart').value = String(settings.weekStart);
+    $('hrSwimOffset').value = settings.hrSwimOffset;
+    $('versionInfo').innerHTML =
+      'App 版本 ' + CONFIG.meta.appVersion + '<br>' +
+      esc(CONFIG.meta.guidelineWho) + '<br>' + esc(CONFIG.meta.guidelinePag) + '<br>' +
+      esc(CONFIG.meta.compendium) + '<br>' + esc(CONFIG.meta.acsm) + '<br>' +
+      esc(CONFIG.meta.tanaka) + '<br>' + esc(CONFIG.meta.dicarlo);
+    renderHR();
+    renderCustomList();
+  }
+  function renderHR() {
+    const age = Number(settings.age) || 0;
+    const rest = Number(settings.restHR) || 0;
+    const pctv = Number($('hrPct').value) || 0;
+    const land = hrMaxTanaka(age);
+    const swim = hrMaxSwim(age, Number(settings.hrSwimOffset));
+    $('hrLand').value = age > 0 ? round(land, 0) + ' bpm' : '—';
+    $('hrSwim').value = age > 0 ? round(swim, 0) + ' bpm' : '—';
+    $('hrTargetLand').value = (age > 0 && rest > 0) ? round(karvonen(rest, land, pctv), 0) + ' bpm' : '—';
+    $('hrTargetSwim').value = (age > 0 && rest > 0) ? round(karvonen(rest, swim, pctv), 0) + ' bpm' : '—';
+  }
+  bindSetting('sWeight', 'weightKg', Number);
+  bindSetting('sAge', 'age', Number);
+  bindSetting('sRestHR', 'restHR', Number);
+  $('sWeekStart').addEventListener('change', function () {
+    settings.weekStart = Number($('sWeekStart').value); saveSettings();
+    viewWeekStart = weekStartOf(fmtDate(new Date()), settings.weekStart);
+    renderDash(); renderHistory();
+  });
+  $('hrSwimOffset').addEventListener('input', function () {
+    settings.hrSwimOffset = Number($('hrSwimOffset').value); saveSettings(); renderHR();
+  });
+  $('hrPct').addEventListener('input', renderHR);
+
+  function renderCustomList() {
+    $('customList').innerHTML = custom.length ? custom.map(function (c) {
+      return '<div class="rec" data-cid="' + esc(c.id) + '"><div class="l"><b>' + esc(c.name) + '</b>' +
+        '<span>MET ' + c.met + (c.strength ? ' · 預設計入肌力' : '') + '</span></div>' +
+        '<div class="r"><button class="linkbtn" data-delc="1">刪除</button></div></div>';
+    }).join('') : '<p class="faint">尚無自訂項目。</p>';
+    $('customList').querySelectorAll('[data-delc]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        const id = b.closest('[data-cid]').dataset.cid;
+        custom = custom.filter(function (c) { return c.id !== id; });
+        saveCustom(); buildActivitySelect(); renderCustomList(); toast('已刪除自訂項目');
+      });
+    });
+  }
+  $('btnAddCustom').addEventListener('click', function () {
+    const name = $('cName').value.trim();
+    const met = Number($('cMet').value);
+    if (!name || !(met > 0)) { toast('請輸入名稱與 MET 值'); return; }
+    custom.push({ id: 'c' + Date.now(), name: name, met: met, strength: $('cStrength').checked });
+    saveCustom();
+    $('cName').value = ''; $('cMet').value = ''; $('cStrength').checked = false;
+    buildActivitySelect(); renderCustomList(); toast('已新增自訂項目');
+  });
+
+  /* ---------- 匯出／匯入／清除 ---------- */
+  function download(filename, text, mime) {
+    const blob = new Blob([text], { type: (mime || 'text/plain') + ';charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(url); a.remove(); }, 500);
+  }
+  $('btnExportJson').addEventListener('click', function () {
+    const payload = { schema: 'weekly-exercise-tracker', version: CONFIG.meta.appVersion,
+                      exportedAt: new Date().toISOString(), settings: settings, custom: custom, records: records };
+    download('exercise-records-' + fmtDate(new Date()) + '.json', JSON.stringify(payload, null, 2), 'application/json');
+  });
+  $('btnExportCsv').addEventListener('click', function () {
+    const head = ['id', 'date', 'weekStart', 'activity', 'met', 'metSource', 'minutes', 'intensity', 'mem', 'metMin', 'kcal', 'isStrength', 'strengthModerate', 'muscles', 'note'];
+    const q = function (v) { return '"' + String(v === null || v === undefined ? '' : v).replace(/"/g, '""') + '"'; };
+    const rows = records.slice().sort(function (a, b) { return a.date < b.date ? -1 : 1; }).map(function (r) {
+      return [r.id, r.date, weekStartOf(r.date, settings.weekStart), r.name, round(r.met, 3), r.metSource, r.minutes,
+        classifyIntensity(r.met), round(memContribution(r.met, r.minutes), 2), round(metMinutes(r.met, r.minutes), 2),
+        round(kcalOf(r.met, settings.weightKg, r.minutes), 1), r.isStrength ? 1 : 0, r.strengthModerate ? 1 : 0,
+        (r.muscles || []).join('|'), r.note || ''].map(q).join(',');
+    });
+    download('exercise-records-' + fmtDate(new Date()) + '.csv', '﻿' + head.map(q).join(',') + '\n' + rows.join('\n'), 'text/csv');
+  });
+  $('btnImport').addEventListener('click', function () { $('fileImport').click(); });
+  $('fileImport').addEventListener('change', function (e) {
+    const f = e.target.files[0]; if (!f) return;
+    const fr = new FileReader();
+    fr.onload = function () {
+      try {
+        const d = JSON.parse(fr.result);
+        if (!d || !Array.isArray(d.records)) throw new Error('格式不符');
+        if (!confirm('匯入將覆蓋目前所有資料，確定繼續？')) return;
+        records = d.records;
+        if (d.settings) Object.assign(settings, d.settings);
+        if (Array.isArray(d.custom)) custom = d.custom;
+        saveRecords(); saveSettings(); saveCustom();
+        buildActivitySelect(); renderSettings(); viewWeekStart = null; renderDash(); renderHistory();
+        toast('匯入完成');
+      } catch (err) { toast('匯入失敗：' + err.message); }
+      e.target.value = '';
+    };
+    fr.readAsText(f);
+  });
+  $('btnClear').addEventListener('click', function () {
+    if (!confirm('將清除所有紀錄、設定與自訂項目，且無法復原。確定？')) return;
+    records = []; custom = []; settings = { weightKg: 65, age: 35, restHR: 60, weekStart: 1, hrSwimOffset: CONFIG.hr.swimOffsetDefault };
+    saveRecords(); saveSettings(); saveCustom();
+    buildActivitySelect(); renderSettings(); resetForm(); viewWeekStart = null; renderDash(); renderHistory();
+    toast('已清除所有資料');
+  });
+
+  /* ---------- 自我測試 ---------- */
+  $('btnRunTests').addEventListener('click', function () {
+    const res = runSelfTests();
+    const passCount = res.filter(function (t) { return t.pass; }).length;
+    $('testOut').innerHTML = '<p class="muted">通過 ' + passCount + ' / ' + res.length + '</p>' +
+      '<table class="tt"><thead><tr><th>案例</th><th>期望</th><th>實際</th><th>結果</th></tr></thead><tbody>' +
+      res.map(function (t) {
+        return '<tr><td><b>' + t.id + '</b><br><span class="faint">' + esc(t.name) + '</span></td>' +
+          '<td>' + esc(t.expected) + '</td><td>' + esc(t.actual) + '</td>' +
+          '<td class="' + (t.pass ? 'pass' : 'fail') + '">' + (t.pass ? 'PASS' : 'FAIL') + '</td></tr>';
+      }).join('') + '</tbody></table>';
+  });
+
+  /* ---------- 啟動 ---------- */
+  load();
+  buildActivitySelect();
+  buildSwimRows();
+  buildMuscleChips();
+  renderSettings();
+  resetForm();
+  viewWeekStart = weekStartOf(fmtDate(new Date()), settings.weekStart);
+  renderDash();
+  renderHistory();
+})();
+</script>
+</body>
+</html>
