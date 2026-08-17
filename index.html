@@ -26,8 +26,9 @@
   --radius:8px;
   --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
 }
+/* 深色配色：系統偏好（未明確指定 light 時）與明確指定 dark 兩種情況皆套用 */
 @media (prefers-color-scheme: dark){
-  :root{
+  :root:not([data-theme="light"]){
     --bg:#131514;
     --surface:#1b1e1d;
     --surface-2:#232726;
@@ -44,6 +45,23 @@
     --yellow:#d0aa4e;
     --red:#d98074;
   }
+}
+:root[data-theme="dark"]{
+  --bg:#131514;
+  --surface:#1b1e1d;
+  --surface-2:#232726;
+  --border:#2e3331;
+  --border-strong:#414745;
+  --text:#e9ebea;
+  --text-muted:#9aa09d;
+  --text-faint:#767c79;
+  --accent:#63b39b;
+  --accent-soft:#1f2f2a;
+  --accent-text:#10201b;
+  --track:#2b302e;
+  --green:#63b39b;
+  --yellow:#d0aa4e;
+  --red:#d98074;
 }
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
@@ -519,6 +537,10 @@ svg.chart{width:100%;height:auto;display:block}
       </div>
       <input type="file" id="fileImport" accept="application/json,.json" class="hidden">
       <p class="faint" style="margin:10px 0 0">資料儲存在此瀏覽器的 localStorage，不會上傳；清除瀏覽器資料將一併移除。建議定期匯出備份。</p>
+      <div class="callout hidden" id="storageWarn" style="border-left-color:var(--red);margin-bottom:0">
+        <strong>此環境無法寫入 localStorage</strong>，紀錄僅暫存於本次瀏覽階段，關閉或重新整理分頁後將遺失。
+        若要長期記錄，請將 <code>index.html</code> 下載至手機或電腦後直接開啟（可加入主畫面），或在離開前先「匯出 JSON」備份。
+      </div>
     </div>
 
     <div class="card">
@@ -972,16 +994,36 @@ function runSelfTests() {
   let selectedMuscles = {};
   let swimPct = {};              // code -> %
 
+  /* localStorage 在部分環境（無痕模式、沙箱化 iframe）不可用；
+     此時降級為記憶體暫存，並於設定頁明確告知資料不會保留 */
+  const memStore = {};
+  let storageOk = (function () {
+    try {
+      localStorage.setItem('wex.probe', '1');
+      localStorage.removeItem('wex.probe');
+      return true;
+    } catch (e) { return false; }
+  })();
+  function lsGet(k) {
+    if (!storageOk) return memStore[k] || null;
+    try { return localStorage.getItem(k); } catch (e) { storageOk = false; return memStore[k] || null; }
+  }
+  function lsSet(k, v) {
+    memStore[k] = v;
+    if (!storageOk) return;
+    try { localStorage.setItem(k, v); } catch (e) { storageOk = false; }
+  }
+
   function load() {
     try {
-      const r = localStorage.getItem(LS.rec); if (r) records = JSON.parse(r) || [];
-      const s = localStorage.getItem(LS.set); if (s) Object.assign(settings, JSON.parse(s) || {});
-      const c = localStorage.getItem(LS.cus); if (c) custom = JSON.parse(c) || [];
-    } catch (e) { console.warn('讀取 localStorage 失敗', e); }
+      const r = lsGet(LS.rec); if (r) records = JSON.parse(r) || [];
+      const s = lsGet(LS.set); if (s) Object.assign(settings, JSON.parse(s) || {});
+      const c = lsGet(LS.cus); if (c) custom = JSON.parse(c) || [];
+    } catch (e) { console.warn('讀取既有資料失敗', e); }
   }
-  function saveRecords() { try { localStorage.setItem(LS.rec, JSON.stringify(records)); } catch (e) { toast('儲存失敗'); } }
-  function saveSettings() { try { localStorage.setItem(LS.set, JSON.stringify(settings)); } catch (e) {} }
-  function saveCustom() { try { localStorage.setItem(LS.cus, JSON.stringify(custom)); } catch (e) {} }
+  function saveRecords() { lsSet(LS.rec, JSON.stringify(records)); }
+  function saveSettings() { lsSet(LS.set, JSON.stringify(settings)); }
+  function saveCustom() { lsSet(LS.cus, JSON.stringify(custom)); }
 
   let toastTimer = null;
   function toast(msg) {
@@ -1450,6 +1492,7 @@ function runSelfTests() {
     $('sAge').value = settings.age;
     $('sRestHR').value = settings.restHR;
     $('sWeekStart').value = String(settings.weekStart);
+    $('storageWarn').classList.toggle('hidden', storageOk);
     $('hrSwimOffset').value = settings.hrSwimOffset;
     $('versionInfo').innerHTML =
       'App 版本 ' + CONFIG.meta.appVersion + '<br>' +
@@ -1508,13 +1551,48 @@ function runSelfTests() {
   });
 
   /* ---------- 匯出／匯入／清除 ---------- */
-  function download(filename, text, mime) {
+  /** 直接以本機檔案開啟時，用 blob 連結下載 */
+  function downloadViaLink(filename, text, mime) {
     const blob = new Blob([text], { type: (mime || 'text/plain') + ';charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url; a.download = filename;
     document.body.appendChild(a); a.click();
     setTimeout(function () { URL.revokeObjectURL(url); a.remove(); }, 500);
+  }
+
+  /** 取得 Artifact 下載能力；本機開啟時回傳 null */
+  function downloadsApi() {
+    try {
+      if (typeof claude === 'undefined' || typeof claude.use !== 'function') return Promise.resolve(null);
+      return claude.use('downloads');
+    } catch (e) { return Promise.resolve(null); }
+  }
+
+  /** 統一的匯出入口：優先走 Artifact 下載能力，否則退回 blob 連結 */
+  function download(filename, text, mime) {
+    downloadsApi().then(function (dl) {
+      if (!dl) { downloadViaLink(filename, text, mime); return; }
+      return dl.save({ filename: filename, data: text }).then(function () {
+        toast('已匯出 ' + filename);
+      }).catch(function (err) {
+        const code = err && err.code;
+        if (code === 'extension_not_enabled') {
+          // 此檢視未開放 .csv 等延伸格式，改以 .txt 匯出（內容不變）
+          return dl.save({ filename: filename.replace(/\.[^.]+$/, '') + '.txt', data: text })
+            .then(function () { toast('已匯出（此環境不支援 .csv，已改存為 .txt）'); })
+            .catch(function (e2) { reportSaveError(e2); });
+        }
+        reportSaveError(err);
+      });
+    });
+  }
+  function reportSaveError(err) {
+    const code = err && err.code;
+    if (code === 'declined') { toast('已取消匯出'); return; }
+    if (code === 'rate_limited') { toast('匯出過於頻繁，請稍候再試'); return; }
+    if (code === 'too_large') { toast('資料過大，無法匯出'); return; }
+    toast('匯出失敗：' + ((err && err.message) || '此環境不支援下載'));
   }
   $('btnExportJson').addEventListener('click', function () {
     const payload = { schema: 'weekly-exercise-tracker', version: CONFIG.meta.appVersion,
