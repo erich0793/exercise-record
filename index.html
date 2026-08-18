@@ -194,6 +194,11 @@ footer.refs h3{font-size:12px;color:var(--text);margin:14px 0 4px}
 footer.refs ul{margin:0;padding-left:18px}
 .disclaimer{border:1px solid var(--border-strong);border-radius:6px;padding:12px;margin-top:14px;font-size:12px;line-height:1.8;color:var(--text-muted)}
 .hidden{display:none !important}
+/* 匯出備援面板（環境不允許直接下載時使用） */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:80;display:flex;align-items:center;justify-content:center;padding:16px}
+.overlay .panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;max-width:640px;width:100%;max-height:86vh;overflow:auto}
+.overlay h3{margin:0 0 4px;font-size:15px}
+.overlay textarea{height:220px;font-family:var(--mono);font-size:12px;white-space:pre;overflow:auto;margin-top:10px}
 .toast{
   position:fixed;left:50%;bottom:24px;transform:translateX(-50%);
   background:var(--text);color:var(--bg);padding:9px 16px;border-radius:99px;font-size:13px;z-index:99;
@@ -1569,10 +1574,52 @@ function runSelfTests() {
     } catch (e) { return Promise.resolve(null); }
   }
 
-  /** 統一的匯出入口：優先走 Artifact 下載能力，否則退回 blob 連結 */
+  /** 是否位於 iframe 內（沙箱環境通常會封鎖 blob 連結下載） */
+  const inFrame = (function () {
+    try { return window.self !== window.top; } catch (e) { return true; }
+  })();
+
+  /** 備援匯出：直接顯示內容供複製，適用於無法觸發下載的環境 */
+  function showCopyPanel(filename, text) {
+    const ov = document.createElement('div');
+    ov.className = 'overlay';
+    ov.innerHTML =
+      '<div class="panel">' +
+      '<h3>匯出：' + esc(filename) + '</h3>' +
+      '<p class="faint" style="margin:0">此環境不允許網頁直接存檔。請複製以下內容，貼到記事本等 App 後另存為 <code>' +
+      esc(filename) + '</code>；日後可由「匯入 JSON」還原。</p>' +
+      '<textarea readonly></textarea>' +
+      '<div class="btnrow" style="margin-top:10px">' +
+      '<button class="btn small" data-copy>複製到剪貼簿</button>' +
+      '<button class="btn secondary small" data-close>關閉</button></div></div>';
+    const ta = ov.querySelector('textarea');
+    ta.value = text;
+    ov.querySelector('[data-close]').addEventListener('click', function () { ov.remove(); });
+    ov.addEventListener('click', function (e) { if (e.target === ov) ov.remove(); });
+    ov.querySelector('[data-copy]').addEventListener('click', function () {
+      ta.focus(); ta.select();
+      const done = function () { toast('已複製'); };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, function () { legacyCopy(ta, done); });
+      } else { legacyCopy(ta, done); }
+    });
+    document.body.appendChild(ov);
+    ta.focus(); ta.select();
+  }
+  function legacyCopy(ta, done) {
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    if (ok) done(); else toast('請長按選取後手動複製');
+  }
+
+  /** 統一的匯出入口：下載能力 → blob 連結 → 複製面板 */
   function download(filename, text, mime) {
     downloadsApi().then(function (dl) {
-      if (!dl) { downloadViaLink(filename, text, mime); return; }
+      if (!dl) {
+        if (inFrame) showCopyPanel(filename, text);
+        else downloadViaLink(filename, text, mime);
+        return;
+      }
       return dl.save({ filename: filename, data: text }).then(function () {
         toast('已匯出 ' + filename);
       }).catch(function (err) {
@@ -1581,18 +1628,19 @@ function runSelfTests() {
           // 此檢視未開放 .csv 等延伸格式，改以 .txt 匯出（內容不變）
           return dl.save({ filename: filename.replace(/\.[^.]+$/, '') + '.txt', data: text })
             .then(function () { toast('已匯出（此環境不支援 .csv，已改存為 .txt）'); })
-            .catch(function (e2) { reportSaveError(e2); });
+            .catch(function (e2) { reportSaveError(e2, filename, text); });
         }
-        reportSaveError(err);
+        reportSaveError(err, filename, text);
       });
     });
   }
-  function reportSaveError(err) {
+  /** 存檔失敗時：使用者主動取消就不打擾，其餘一律退回複製面板 */
+  function reportSaveError(err, filename, text) {
     const code = err && err.code;
     if (code === 'declined') { toast('已取消匯出'); return; }
     if (code === 'rate_limited') { toast('匯出過於頻繁，請稍候再試'); return; }
-    if (code === 'too_large') { toast('資料過大，無法匯出'); return; }
-    toast('匯出失敗：' + ((err && err.message) || '此環境不支援下載'));
+    toast('無法直接存檔，改以複製方式匯出');
+    showCopyPanel(filename, text);
   }
   $('btnExportJson').addEventListener('click', function () {
     const payload = { schema: 'weekly-exercise-tracker', version: CONFIG.meta.appVersion,
