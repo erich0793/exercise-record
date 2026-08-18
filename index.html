@@ -198,6 +198,34 @@ footer.refs ul{margin:0;padding-left:18px}
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:80;display:flex;align-items:center;justify-content:center;padding:16px}
 .overlay .panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;max-width:640px;width:100%;max-height:86vh;overflow:auto}
 .overlay h3{margin:0 0 4px;font-size:15px}
+/* 欄位說明按鈕 */
+.helpbtn{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:17px;height:17px;border-radius:50%;border:1px solid var(--border-strong);
+  background:none;color:var(--text-faint);font-size:11px;line-height:1;cursor:pointer;
+  padding:0;margin-left:5px;vertical-align:1px;flex:none;
+}
+.helpbtn:hover,.helpbtn:focus{border-color:var(--accent);color:var(--accent)}
+/* 說明頁 */
+.help h3{font-size:15px;margin:0 0 6px;scroll-margin-top:120px}
+.help h4{font-size:13.5px;margin:16px 0 4px;color:var(--accent);scroll-margin-top:120px}
+.help p{margin:6px 0;font-size:13.5px;line-height:1.8;color:var(--text-muted)}
+.help p strong,.help li strong{color:var(--text)}
+.help ul{margin:6px 0;padding-left:20px;font-size:13.5px;line-height:1.8;color:var(--text-muted)}
+.help li{margin:3px 0}
+.help .src{font-size:11.5px;color:var(--text-faint);line-height:1.7;margin:4px 0 0}
+.help .src a{color:var(--text-faint)}
+.help a{color:var(--accent)}
+.help table.tt td,.help table.tt th{font-size:12.5px;line-height:1.6}
+.tocgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:4px}
+@media(max-width:440px){.tocgrid{grid-template-columns:1fr}}
+.tocgrid a{
+  display:block;padding:8px 10px;border:1px solid var(--border);border-radius:6px;
+  font-size:13px;color:var(--text);text-decoration:none;background:var(--surface-2);
+}
+.tocgrid a:hover{border-color:var(--accent);color:var(--accent)}
+.verdict{border:1px solid var(--border-strong);border-left:3px solid var(--accent);border-radius:4px;padding:10px 12px;margin:10px 0;font-size:13.5px;line-height:1.8}
+.verdict b{display:block;margin-bottom:2px}
 .overlay textarea{height:220px;font-family:var(--mono);font-size:12px;white-space:pre;overflow:auto;margin-top:10px}
 .toast{
   position:fixed;left:50%;bottom:24px;transform:translateX(-50%);
@@ -221,6 +249,7 @@ svg.chart{width:100%;height:auto;display:block}
       <button role="tab" data-tab="dash" aria-selected="true">本週儀表板</button>
       <button role="tab" data-tab="add" aria-selected="false">新增紀錄</button>
       <button role="tab" data-tab="hist" aria-selected="false">歷史紀錄</button>
+      <button role="tab" data-tab="help" aria-selected="false">說明</button>
       <button role="tab" data-tab="set" aria-selected="false">設定</button>
     </nav>
   </div>
@@ -348,13 +377,13 @@ svg.chart{width:100%;height:auto;display:block}
           <input type="date" id="fDate">
         </div>
         <div class="field">
-          <label for="fMinutes">時長（分鐘）</label>
+          <label for="fMinutes">時長（分鐘）<button type="button" class="helpbtn" data-help="h-opt-minutes" aria-label="時長說明">?</button></label>
           <input type="number" id="fMinutes" min="0" step="1" inputmode="numeric" placeholder="例：30">
         </div>
       </div>
 
       <div class="field">
-        <label for="fActivity">活動項目</label>
+        <label for="fActivity">活動項目<button type="button" class="helpbtn" data-help="h-opt-activity" aria-label="活動項目說明">?</button></label>
         <select id="fActivity"></select>
       </div>
 
@@ -389,11 +418,19 @@ svg.chart{width:100%;height:auto;display:block}
         </div>
       </div>
 
+      <!-- 攀岩類項目提示：肌群覆蓋偏向拉的動作 -->
+      <div id="modClimb" class="callout hidden">
+        <strong>抱石／攀岩的肌群怎麼勾</strong><br>
+        典型建議：<strong>背部、手臂、肩部、腹部</strong>；路線需大量蹬踏、高抬腿時再加上腿部、髖部。<br>
+        <strong>胸部通常練不到</strong>——攀爬幾乎都是拉的動作。覆蓋圖上留著的灰格是提醒你另外補推的動作，不是錯誤。
+        <button type="button" class="helpbtn" data-help="h-boulder" aria-label="抱石說明">?</button>
+      </div>
+
       <!-- 主觀強度覆寫 -->
       <div class="field">
         <div class="check">
           <input type="checkbox" id="fOverride">
-          <label for="fOverride" style="margin:0;color:var(--text)">主觀強度覆寫（talk test / RPE）— 以主觀判定取代查表 MET</label>
+          <label for="fOverride" style="margin:0;color:var(--text)">主觀強度覆寫（talk test / RPE）— 以主觀判定取代查表 MET</label><button type="button" class="helpbtn" data-help="h-opt-override" aria-label="主觀強度覆寫說明">?</button>
         </div>
         <div id="modOverride" class="hidden">
           <div class="field">
@@ -428,20 +465,20 @@ svg.chart{width:100%;height:auto;display:block}
       <div class="field">
         <div class="check">
           <input type="checkbox" id="fIsStrength">
-          <label for="fIsStrength" style="margin:0;color:var(--text)">計入肌力訓練（muscle-strengthening）</label>
+          <label for="fIsStrength" style="margin:0;color:var(--text)">計入肌力訓練（muscle-strengthening）</label><button type="button" class="helpbtn" data-help="h-opt-strength" aria-label="計入肌力訓練說明">?</button>
         </div>
         <div id="modStrength" class="hidden">
-          <label>本次訓練之主要肌群（可複選）</label>
+          <label>本次訓練之主要肌群（可複選）<button type="button" class="helpbtn" data-help="h-opt-muscles" aria-label="肌群說明">?</button></label>
           <div class="chipset" id="muscleChips"></div>
           <div class="check" style="margin-top:10px">
             <input type="checkbox" id="fStrengthModerate" checked>
-            <label for="fStrengthModerate" style="margin:0;color:var(--text)">強度為 moderate 或以上（未勾選則不計入肌群覆蓋與訓練天數）</label>
+            <label for="fStrengthModerate" style="margin:0;color:var(--text)">強度為 moderate 或以上（未勾選則不計入肌群覆蓋與訓練天數）</label><button type="button" class="helpbtn" data-help="h-opt-moderate" aria-label="強度說明">?</button>
           </div>
         </div>
       </div>
 
       <div class="field">
-        <label for="fNote">備註（選填）</label>
+        <label for="fNote">備註（選填）<button type="button" class="helpbtn" data-help="h-opt-note" aria-label="備註說明">?</button></label>
         <input type="text" id="fNote" placeholder="例：晨泳、間歇 8×400m">
       </div>
 
@@ -481,7 +518,189 @@ svg.chart{width:100%;height:auto;display:block}
     </div>
   </section>
 
-  <!-- ④ 設定 -->
+  <!-- ④ 說明 -->
+  <section class="tabpanel help" id="tab-help" role="tabpanel">
+
+    <div class="card">
+      <h2>快速跳轉</h2>
+      <div class="tocgrid">
+        <a href="#h-opts">各欄位怎麼填</a>
+        <a href="#h-boulder">抱石／攀岩怎麼記</a>
+        <a href="#h-met">重量訓練要算 MET 嗎</a>
+        <a href="#h-freq">一週兩次就夠嗎</a>
+        <a href="#h-grade">證據分級宣告</a>
+        <a href="#h-gap">證據缺口</a>
+      </div>
+    </div>
+
+    <!-- 證據分級宣告：置於實質內容之前 -->
+    <div class="card">
+      <h2 id="h-grade">證據分級宣告</h2>
+      <p><strong>分級系統</strong>：GRADE（Grading of Recommendations, Assessment, Development and Evaluation）。</p>
+      <p><strong>參考依據</strong>：GRADE Working Group 方法論；WHO 2020 指引本身即以 GRADE 標示各條建議之強度與證據確定性。</p>
+      <table class="tt">
+        <thead><tr><th>GRADE 等級</th><th>定義</th></tr></thead>
+        <tbody>
+          <tr><td><b>High</b></td><td>對效果估計值有高度信心；真實效果極可能接近估計值</td></tr>
+          <tr><td><b>Moderate</b></td><td>對效果估計值有中度信心；真實效果可能接近估計值，但仍有實質不同之可能</td></tr>
+          <tr><td><b>Low</b></td><td>對效果估計值信心有限；真實效果可能與估計值有實質差異</td></tr>
+          <tr><td><b>Very Low</b></td><td>對效果估計值幾無信心；真實效果極可能與估計值有實質差異</td></tr>
+        </tbody>
+      </table>
+      <h4>建議強度標示（WHO 用法）</h4>
+      <ul>
+        <li><strong>Strong recommendation</strong>：期望效益明確大於不良後果，多數人在多數情境下應採行（用語：should）</li>
+        <li><strong>Conditional recommendation</strong>：效益與代價之平衡較不確定，需視個別情境調整（用語：may）</li>
+      </ul>
+      <h4>本頁使用之額外標籤（非建議性質，不適用 GRADE）</h4>
+      <ul>
+        <li><code>[參考測量值]</code> — 測量學參考資料（如 MET 查表值），性質為 reference data</li>
+        <li><code>[公式推導]</code> — 由實驗室代謝方程式推算所得</li>
+        <li><code>[指引慣例]</code> — 指引採用之換算約定，非獨立實證結論</li>
+        <li><code>[實作約定]</code> — 本工具為了可運算而自行採用的規則，<strong>非實證結論</strong></li>
+      </ul>
+      <p class="src">本頁出現之等級：Strong/Conditional recommendation 搭配 Moderate certainty（指引建議）、Low（單一小型研究）、以及上列四種標籤。</p>
+    </div>
+
+    <div class="card">
+      <h2 id="h-opts">各欄位怎麼填</h2>
+
+      <h4 id="h-opt-activity">活動項目</h4>
+      <p>決定 MET 值的來源。多數項目直接查表；<strong>跑步</strong>改用速度動態計算，<strong>游泳</strong>改用泳姿加權。查不到的項目可在「設定 → 自訂活動項目」自行新增。</p>
+      <p class="src"><code>[參考測量值]</code> 出處：2024 Adult Compendium of Physical Activities (ages 19–59), Arizona State University。此為測量參考資料，非臨床建議。</p>
+
+      <h4 id="h-opt-minutes">時長（分鐘）</h4>
+      <p>填實際活動時間。<strong>沒有最低門檻</strong>——2018 PAG 已取消舊版「單次至少 10 分鐘」的規定，走路 7 分鐘一樣全數計入。</p>
+      <p>抱石這類「爬一下、休息一下」的間歇型活動，建議填<strong>實際在牆上的時間加上組間短休</strong>，也就是你認為自己「在運動」的總時間，不要把整場泡在館裡的時間都算進去。</p>
+      <p class="src"><code>[指引慣例]</code> 出處：US Physical Activity Guidelines for Americans, 2nd ed. (2018)。</p>
+
+      <h4 id="h-opt-override">主觀強度覆寫（talk test / RPE）</h4>
+      <p>查表 MET 是<strong>族群平均值</strong>，不會因為你今天很拚或很混而改變。當查表值明顯不符實際感受時，用這個開關以主觀判定取代它。</p>
+      <ul>
+        <li><strong>Talk test</strong>：還能講完整句子但無法唱歌 → Moderate；只能講幾個字就要換氣 → Vigorous</li>
+        <li><strong>RPE Borg 6–20</strong>：12–13 為 Moderate，14–17 為 Vigorous</li>
+        <li><strong>RPE CR10</strong>：3–4 為 Moderate，5–6 為 Vigorous</li>
+      </ul>
+      <p>覆寫後的紀錄會標註為「主觀判定」，在歷史紀錄中可與查表值區分。</p>
+      <p><strong>什麼時候該用</strong>：游泳（技術差異可造成代謝成本相差 2–3 倍）、抱石（查表值是整場平均，難度高的路線遠超過此值）、間歇訓練。</p>
+      <p class="src">此功能同時是本工具唯一能校正 <strong>absolute intensity</strong>（MET 分級）與 <strong>relative intensity</strong>（相對於個人心肺適能）落差的方式。心肺適能良好者做同樣的活動，實際相對強度會低於分類值。</p>
+
+      <h4 id="h-opt-strength">計入肌力訓練</h4>
+      <p>勾選後，這筆紀錄會計入<strong>肌力訓練的達標判定</strong>（訓練天數 + 肌群覆蓋），與有氧判定<strong>各自獨立、不互相折抵</strong>。</p>
+      <p>重量訓練、抱石、攀岩會自動勾選；其他項目若你認為具肌力成分也可手動勾選。</p>
+
+      <h4 id="h-opt-muscles">本次訓練之主要肌群（可複選）</h4>
+      <p>肌力達標需要<strong>7 大肌群全數涵蓋</strong>：腿部、髖部、背部、腹部、胸部、肩部、手臂。這是達標判定中最容易漏掉的一項——多數人天數很快達標，卻總是缺一兩個肌群。</p>
+      <p>只選<strong>這次真的有練到、且是主要負荷</strong>的肌群。輕微參與（例如深蹲時的腹部）不建議勾選，否則覆蓋圖會失去意義，讓你誤以為已經練全。</p>
+      <p class="src"><span class="tag grade">Strong recommendation, Moderate certainty</span> 出處：WHO 2020 成人建議第 3 條；US PAG 2nd ed., Key Guidelines for Adults。</p>
+
+      <h4 id="h-opt-moderate">強度為 moderate 或以上</h4>
+      <p>指引要求肌力訓練需達 moderate 以上強度才計入。實務判準：做到<strong>接近力竭、再多做一下會明顯吃力</strong>。</p>
+      <p>取消勾選時，該筆紀錄<strong>不計入訓練天數，也不計入肌群覆蓋</strong>——這是刻意從嚴，避免熱身或極輕鬆的活動撐出達標假象。輕鬆的復健或伸展性質訓練請取消勾選。</p>
+
+      <h4 id="h-opt-note">備註</h4>
+      <p>純文字，不參與任何計算。適合記錄課表細節（例如「V4 ×3、V3 ×6」或「深蹲 5×5 @60kg」），日後回顧時可判斷強度變化。</p>
+    </div>
+
+    <div class="card">
+      <h2 id="h-boulder">抱石／攀岩怎麼記</h2>
+      <p>抱石是本工具最需要說明的項目，因為它<strong>同時具備有氧與肌力成分</strong>，且查表 MET 與實際峰值落差很大。</p>
+
+      <h4>1. MET 該填多少</h4>
+      <p>Compendium 給的一般攀岩值為 <strong>5.8</strong>（上攀 7.5），屬 moderate。但實測顯示，菁英抱石者在模擬競賽中的<strong>峰值攝氧量達 35.8 ± 7.3 mL/kg/min</strong>（約為跑步機最大值的 75%）、<strong>峰值心率 162 ± 14 bpm</strong>（約最大值的 88%），且有 22.9% 的攀爬時間超過氣體交換閾值。</p>
+      <p>換算下來峰值約相當於 10 METs，遠高於查表的 5.8。兩者<strong>並不衝突</strong>：查表值是整場（含大量組間休息）的平均，實測是攀爬當下的峰值。抱石是高度間歇的活動，這個落差是結構性的，不是誰算錯。</p>
+      <div class="verdict">
+        <b>建議做法</b>
+        一般休閒抱石：直接用查表 5.8。<br>
+        高強度課表（連續上難線、組間休息短、結束時明顯喘）：開啟<strong>主觀強度覆寫</strong>，依 talk test 判為 vigorous 並填 7.0 以上。不要為了「看起來認真」而灌高數值——MET 只影響有氧計算，肌力達標與 MET 無關。
+      </div>
+      <p class="src"><span class="tag grade">GRADE: Low</span>（單一小型橫斷研究，n=11 菁英選手，未必推及休閒攀爬者）出處：Callender NA, Hayes TN, Tiller NB. Cardiorespiratory demands of competitive rock climbing. <em>Appl Physiol Nutr Metab.</em> 2021;46(2):161-168. 取自 PubMed，<a href="https://doi.org/10.1139/apnm-2020-0566" target="_blank" rel="noopener">DOI: 10.1139/apnm-2020-0566</a></p>
+
+      <h4>2. 抱石算不算肌力訓練</h4>
+      <p>系統性回顧顯示，攀岩訓練能提升<strong>最大握力、上肢肌力與上肢肌耐力</strong>；生物力學研究則測得攀爬時<strong>所測 12 條肩部肌群全部呈現高活化</strong>，即使是有經驗者亦然。就「產生肌力適應」而言，抱石具備肌力訓練的性質。</p>
+      <p><strong>但它是拉的運動，不是全身運動。</strong>抱石主要訓練背部、手臂、肩部、腹部（核心維持身體貼牆），腿部與髖部參與程度依路線差異很大，<strong>胸部幾乎練不到</strong>——推的動作在攀爬中極少出現。</p>
+      <div class="verdict">
+        <b>建議做法</b>
+        抱石當天勾選<strong>背部、手臂、肩部、腹部</strong>；路線需要大量蹬踏、高抬腿時再加上<strong>腿部、髖部</strong>。<br>
+        <strong>胸部不要勾。</strong>覆蓋圖上留著的那格灰色是正確的訊號——它在提醒你需要另外補推的動作（伏地挺身、臥推、肩推）。只練攀岩的人幾乎必然在胸部這格卡住，這正是這個設計要抓出來的事。
+      </div>
+      <p class="src"><span class="tag grade">GRADE: Moderate</span>（系統性回顧，12 篇研究，多數為中等方法學品質）出處：Langer K, Simon C, Wiemeyer J. Strength Training in Climbing: A Systematic Review. <em>J Strength Cond Res.</em> 2023;37(3):751-767. 取自 PubMed，<a href="https://doi.org/10.1519/JSC.0000000000004286" target="_blank" rel="noopener">DOI: 10.1519/JSC.0000000000004286</a></p>
+      <p class="src"><span class="tag grade">GRADE: Low</span>（單一實驗研究，n=30，水平橫渡任務非真實抱石路線）出處：MacLean KFE, Dickerson CR. Kinematic and EMG analysis of horizontal bimanual climbing in humans. <em>J Biomech.</em> 2019;92:11-18. 取自 PubMed，<a href="https://doi.org/10.1016/j.jbiomech.2019.05.023" target="_blank" rel="noopener">DOI: 10.1016/j.jbiomech.2019.05.023</a></p>
+
+      <h4>3. 該怎麼計次才知道達標</h4>
+      <p>關鍵觀念：<strong>肌力達標不看時間，也不看 MET，只看「天數」與「肌群」。</strong>所以抱石不需要換算成幾組幾下，也不需要算它值多少 MET 才算數。</p>
+      <ul>
+        <li><strong>計次</strong>：一天算一次，不論爬 40 分鐘還是 2 小時。同一天爬兩場仍只算一天</li>
+        <li><strong>計量</strong>：達標門檻是每週 ≥2 個<strong>不同日</strong>，且 7 大肌群全覆蓋</li>
+        <li><strong>常見結果</strong>：一週爬三次的人，天數輕鬆達標，但覆蓋圖會停在缺胸部（可能還缺腿、髖）→ 系統判定<strong>肌力未達標</strong>，這是正確的</li>
+      </ul>
+      <div class="verdict">
+        <b>只爬抱石的人要怎麼達標</b>
+        每週兩天抱石 + 另外找一天做推的動作與下肢動作（伏地挺身／臥推／肩推 + 深蹲或硬舉），7 格才會補滿。<br>
+        或是在抱石當天結束後補 10 分鐘的推與腿，同一天完成，天數與肌群一起解決。
+      </div>
+      <p class="src"><code>[實作約定]</code> 將抱石對應到特定肌群的做法為本工具的實作規則，<strong>非官方分類</strong>。WHO 2020 與 US PAG 2018 均未針對攀岩列出肌群對應表。</p>
+    </div>
+
+    <div class="card">
+      <h2 id="h-met">重量訓練需要計算 MET 嗎</h2>
+      <div class="verdict">
+        <b>結論：判定達標時不需要，估算熱量與有氧貢獻時才需要。</b>
+        指引對肌力訓練的計量單位是<strong>「天數 × 肌群 × 強度」</strong>，完全沒有 MET 或分鐘數的門檻。本工具的肌力達標判定也因此<strong>完全不看 MET</strong>——你把重訓的 MET 填 3.5 或 6.0，對肌力那盞燈毫無影響。
+      </div>
+      <p>MET 在重量訓練上仍有兩個用途，兩者都是次要的：</p>
+      <ul>
+        <li><strong>估算熱量</strong>：kcal = MET × 體重 × 時數。誤差約 ±15–20%，且為 gross（總）消耗</li>
+        <li><strong>計入有氧</strong>：重訓若達 moderate 以上（Compendium 一般值 3.5、vigorous 6.0），其分鐘數同樣計入 MEM。這是指引允許的，不是重複計算——同一段時間可以同時滿足兩種建議，但<strong>兩項達標判定仍各自獨立</strong></li>
+      </ul>
+      <p>值得注意的是，大型世代研究在量化肌力訓練時，用的單位也是<strong>「每週次數」</strong>而非 MET 或分鐘——證據基礎本身就不是用 MET 建立的。</p>
+      <p class="src"><span class="tag grade">Strong recommendation, Moderate certainty</span> 出處：WHO. Guidelines on Physical Activity and Sedentary Behaviour. 2020；U.S. DHHS. Physical Activity Guidelines for Americans, 2nd ed. 2018。</p>
+      <p class="src"><span class="tag grade">GRADE: Low</span>（大型前瞻世代研究，n=416,420；觀察性設計無法確立因果）出處：Coleman CJ, McDonough DJ, Pope ZC, Pope CA. Dose-response association of aerobic and muscle-strengthening physical activity with mortality. <em>Br J Sports Med.</em> 2022. 取自 PubMed，<a href="https://doi.org/10.1136/bjsports-2022-105519" target="_blank" rel="noopener">DOI: 10.1136/bjsports-2022-105519</a></p>
+    </div>
+
+    <div class="card">
+      <h2 id="h-freq">一週兩次重量訓練就夠了嗎</h2>
+      <div class="verdict">
+        <b>結論：要看你問的是哪一件事。</b>
+        以<strong>健康效益達標</strong>而言，是的，每週 2 天即滿足指引。<br>
+        以<strong>肌力與肌肉量進步</strong>而言，2 天是合理起點但不等於最佳，真正的關鍵是總訓練量。
+      </div>
+
+      <h4>就死亡率而言：1–2 次即為最小有效劑量</h4>
+      <p>一項納入 41.6 萬名美國成人的世代研究發現，在已有有氧運動的基礎上，肌力訓練<strong>每週 1 次即帶來額外的死亡風險下降</strong>（HR 0.89, 95% CI 0.81–0.97），最小有效劑量為每週 1–2 次；而<strong>每週 7 次時效益已不復存在</strong>（HR 0.99, 95% CI 0.94–1.04）。</p>
+      <p>換句話說，就這個結果指標而言，練更多次<strong>並非線性更好</strong>。這也是指引把門檻設在 2 天、而非更高的原因之一。</p>
+      <p class="src"><span class="tag grade">GRADE: Low</span>（觀察性世代研究，自陳式測量，殘餘干擾無法排除）出處：Coleman CJ, et al. <em>Br J Sports Med.</em> 2022. 取自 PubMed，<a href="https://doi.org/10.1136/bjsports-2022-105519" target="_blank" rel="noopener">DOI: 10.1136/bjsports-2022-105519</a></p>
+
+      <h4>就肌肉生長而言：每個肌群每週 2 次優於 1 次</h4>
+      <p>統合分析顯示，在<strong>總訓練量相等</strong>的前提下，每個肌群每週訓練 2 次的肥大效果優於 1 次（效果量 0.49 ± 0.08 vs 0.30 ± 0.07, P = 0.002）。是否 3 次優於 2 次則<strong>尚無定論</strong>。</p>
+      <p class="src"><span class="tag grade">GRADE: Moderate</span>（統合分析，10 篇研究，多數受試者為未訓練者）出處：Schoenfeld BJ, Ogborn D, Krieger JW. Effects of Resistance Training Frequency on Measures of Muscle Hypertrophy. <em>Sports Med.</em> 2016;46(11):1689-1697. 取自 PubMed，<a href="https://doi.org/10.1007/s40279-016-0543-8" target="_blank" rel="noopener">DOI: 10.1007/s40279-016-0543-8</a></p>
+
+      <h4>就肌力增長而言：次數的影響其實來自訓練量</h4>
+      <p>另一項納入 22 篇研究的統合分析顯示，肌力增長的效果量隨頻率上升（每週 1、2、3、4+ 次分別為 0.74、0.82、0.93、1.08，P = 0.003）；但<strong>將訓練量對等後，頻率的效果即不再顯著</strong>（P = 0.421）。</p>
+      <p>意思是：頻率本身可能不是主因，高頻率之所以有效，是因為它讓你<strong>累積了更多總訓練量</strong>。若你能在 2 天內完成足夠的量，效果未必輸給分成 4 天。</p>
+      <p class="src"><span class="tag grade">GRADE: Moderate</span>（統合分析，22 篇研究，多為未訓練者，訓練者證據不足）出處：Grgic J, Schoenfeld BJ, Davies TB, Lazinica B, Krieger JW, Pedisic Z. Effect of Resistance Training Frequency on Gains in Muscular Strength. <em>Sports Med.</em> 2018;48(5):1207-1220. 取自 PubMed，<a href="https://doi.org/10.1007/s40279-018-0872-x" target="_blank" rel="noopener">DOI: 10.1007/s40279-018-0872-x</a></p>
+
+      <h4>這三者為何不衝突</h4>
+      <p>它們回答的是<strong>不同問題</strong>，因此本工具<strong>不對這些數值取平均或合併</strong>：死亡率研究問「活得久不久」，肥大與肌力統合分析問「練得起不起來」。達標門檻採指引的 2 天，是公共衛生的<strong>最低標準</strong>，不是訓練學上的最佳解。本工具只判定前者。</p>
+    </div>
+
+    <div class="card">
+      <h2 id="h-gap">證據缺口與限制</h2>
+      <ul>
+        <li><strong>抱石的官方肌群對應</strong>：WHO 2020 與 US PAG 2018 均未提供攀岩對應哪些主要肌群的官方分類。本工具的建議勾選組合為<code>[實作約定]</code>，依據肌力適應與 EMG 研究推得，非指引結論。</li>
+        <li><strong>休閒抱石者的 MET</strong>：provided sources 未提供休閒程度抱石者的實測 MET。現有實測為菁英選手在競賽情境下的峰值，不宜直接套用於一般愛好者。</li>
+        <li><strong>肌力訓練的最佳劑量</strong>：provided sources 未提供以健康結果（而非肌力/肥大）為終點的最佳組數與反覆次數。指引本身亦未規定組數、次數或時長。</li>
+        <li><strong>頻率與訓練量的拆分</strong>：現有統合分析多以未訓練者為受試對象，已有訓練經驗者的證據仍不足。</li>
+        <li><strong>混合泳姿之 MET</strong>：provided sources 未提供官方加權方法。本工具採線性加權為<code>[實作約定]</code>。</li>
+        <li><strong>報酬遞減轉折點</strong>：WHO 指出風險下降在超過每週 300 分鐘後趨於平緩，但證據不足以指出確切轉折點。本工具不對 &gt;300 MEM 做任何效益外推。</li>
+        <li><strong>時效性</strong>：指引與 Compendium 均會改版，建議每 2 年重新查核。</li>
+        <li><strong>個別化</strong>：本頁為一般性說明，不取代個別臨床評估。有心血管疾病史、慢性病或特殊健康考量者，運動處方應由具運動醫學專業之醫師個別評估。</li>
+      </ul>
+      <p class="src">所有 PubMed 文獻引用均取自 PubMed 資料庫，並附原始文章 DOI 連結。</p>
+    </div>
+  </section>
+
+  <!-- ⑤ 設定 -->
   <section class="tabpanel" id="tab-set" role="tabpanel">
     <div class="card">
       <h2>個人參數</h2>
@@ -687,8 +906,8 @@ const CONFIG = {
     { id: 'walk64',  name: '快走 6.4 km/hr',        met: 5.0, group: '步行' },
     { id: 'bike16',  name: '自行車 16–19 km/hr',    met: 6.8, group: '自行車' },
     { id: 'bike19',  name: '自行車 19–22 km/hr',    met: 8.0, group: '自行車' },
-    { id: 'boulder', name: '抱石／攀岩（一般）',      met: 5.8, group: '攀岩', note: '兼具肌力成分', strengthDefault: true },
-    { id: 'climb',   name: '攀岩（上攀）',           met: 7.5, group: '攀岩', strengthDefault: true },
+    { id: 'boulder', name: '抱石／攀岩（一般）',      met: 5.8, group: '攀岩', note: '兼具肌力成分', strengthDefault: true, climbHint: true },
+    { id: 'climb',   name: '攀岩（上攀）',           met: 7.5, group: '攀岩', strengthDefault: true, climbHint: true },
     { id: 'wtMod',   name: '重量訓練（一般，moderate effort）', met: 3.5, group: '肌力', note: '計入肌力，亦可計入有氧', strengthDefault: true },
     { id: 'wtVig',   name: '重量訓練（vigorous effort）',       met: 6.0, group: '肌力', strengthDefault: true },
     { id: 'aquajog', name: '水中慢跑（vigorous）',   met: 9.8, group: '水域' },
@@ -1063,6 +1282,31 @@ function runSelfTests() {
     b.addEventListener('click', function () { switchTab(b.dataset.tab); });
   });
 
+  /* 欄位旁的「?」：切到說明頁並捲到對應段落 */
+  document.querySelectorAll('.helpbtn').forEach(function (b) {
+    b.addEventListener('click', function (e) {
+      e.preventDefault();
+      switchTab('help');
+      const target = document.getElementById(b.dataset.help);
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // 短暫標示，讓使用者知道跳到哪一段
+        target.style.transition = 'color .2s';
+        const orig = target.style.color;
+        target.style.color = 'var(--accent)';
+        setTimeout(function () { target.style.color = orig; }, 1600);
+      }
+    });
+  });
+  // 說明頁內的目錄連結
+  document.querySelectorAll('.tocgrid a').forEach(function (a) {
+    a.addEventListener('click', function (e) {
+      e.preventDefault();
+      const t = document.querySelector(a.getAttribute('href'));
+      if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+
   /* ---------- 儀表板 ---------- */
   function recordsOfWeek(ws) {
     return records.filter(function (r) { return weekStartOf(r.date, settings.weekStart) === ws; });
@@ -1214,6 +1458,7 @@ function runSelfTests() {
     const kind = a ? a.kind : null;
     $('modRun').classList.toggle('hidden', kind !== 'run');
     $('modSwim').classList.toggle('hidden', kind !== 'swim');
+    $('modClimb').classList.toggle('hidden', !(a && a.climbHint));
     $('modOverride').classList.toggle('hidden', !$('fOverride').checked);
     $('modStrength').classList.toggle('hidden', !$('fIsStrength').checked);
   }

@@ -85,7 +85,19 @@ npx http-server . -p 8080
 - 依週分組列表，可編輯／刪除
 - 近 12 週趨勢圖（MEM 柱狀走左軸、MET-min 折線走右軸，虛線為 150 / 300 MEM），純 SVG 繪製
 
-### ④ 設定
+### ④ 說明
+
+App 內建的說明頁，可由「新增紀錄」各欄位旁的 **?** 按鈕直接跳轉至對應段落。內容依本文件第 0 節之 GRADE 宣告標示等級與出處，並置於實質內容之前。涵蓋：
+
+- **各欄位怎麼填**：活動項目、時長、主觀強度覆寫、計入肌力訓練、主要肌群、強度 moderate 以上、備註
+- **抱石／攀岩怎麼記**：MET 該填多少、算不算肌力訓練、該怎麼計次才知道達標
+- **重量訓練需要計算 MET 嗎**
+- **一週兩次重量訓練就夠了嗎**
+- **證據缺口與限制**
+
+選擇抱石／攀岩項目時，「新增紀錄」頁會另外顯示肌群勾選提示（見第 4.3 節）。
+
+### ⑤ 設定
 
 - 體重、年齡、靜息心率、週起始日（預設週一）
 - 心率模組（選用，**預設摺疊**）：Tanaka HRmax、水中修正、Karvonen 目標心率
@@ -189,6 +201,40 @@ const hrMaxLand = 208 - 0.7 * age;              // Tanaka
 const hrMaxSwim = hrMaxLand - 12;               // 預設；可調整 -13 至 -10
 const targetHR  = hrRest + intensityPercent * (hrMax - hrRest);   // Karvonen
 ```
+
+---
+
+## 3.11 肌力訓練的計量方式與抱石歸屬（文獻查證）
+
+以下為針對「重量訓練是否需計算 MET」「一週兩次是否足夠」「抱石如何計次」三問題之查證結果，文獻均取自 PubMed。
+
+### 肌力訓練不以 MET 或分鐘計量
+
+指引對肌力訓練的計量單位為 **天數 × 肌群 × 強度**，未設定 MET 或時長門檻。本工具的肌力達標判定因此完全不參照 MET；MET 僅用於熱量估算，以及讓 moderate 以上的重訓分鐘數計入有氧 MEM。大型世代研究在量化肌力訓練時，採用的單位同樣是**每週次數**而非 MET。
+
+`Strong recommendation, Moderate certainty` — WHO 2020；US PAG 2nd ed. 2018
+
+### 每週次數：不同結果指標給出不同答案（不予合併）
+
+| 結果指標 | 發現 | 等級 |
+|---|---|---|
+| 全因死亡率 | 在已有有氧運動基礎上，肌力訓練每週 1 次即帶來額外風險下降（HR 0.89, 95% CI 0.81–0.97），最小有效劑量 1–2 次；每週 7 次時效益已不復存在（HR 0.99, 95% CI 0.94–1.04） | `GRADE: Low`（觀察性世代研究，n=416,420） |
+| 肌肉肥大 | 總訓練量相等下，每肌群每週 2 次優於 1 次（ES 0.49 ± 0.08 vs 0.30 ± 0.07, P = 0.002）；3 次是否優於 2 次尚無定論 | `GRADE: Moderate`（統合分析，10 篇） |
+| 肌力增長 | 效果量隨頻率上升（1/2/3/4+ 次為 0.74/0.82/0.93/1.08, P = 0.003），但**訓練量對等後頻率效果不再顯著**（P = 0.421） | `GRADE: Moderate`（統合分析，22 篇） |
+
+三者回答的是不同問題，**本工具不對這些數值取平均或合併**。達標門檻採指引的 2 天，屬公共衛生最低標準，非訓練學最佳解；本工具只判定前者。
+
+### 抱石／攀岩
+
+| 面向 | 發現 | 等級 |
+|---|---|---|
+| 心肺需求 | 菁英抱石者模擬競賽中峰值攝氧量 35.8 ± 7.3 mL/kg/min（約跑步機最大值 75%）、峰值心率 162 ± 14 bpm（約 88%），22.9% 攀爬時間超過氣體交換閾值 | `GRADE: Low`（單一橫斷研究，n=11 菁英） |
+| 肌力適應 | 攀岩訓練可提升最大握力、上肢肌力與上肢肌耐力 | `GRADE: Moderate`（系統性回顧，12 篇） |
+| 肌群參與 | 攀爬時所測 12 條肩部肌群全部呈現高活化，有經驗者亦然 | `GRADE: Low`（單一實驗研究，n=30） |
+
+峰值換算約 10 METs，遠高於 Compendium 查表值 5.8。兩者不衝突：查表值為整場（含組間休息）平均，實測為攀爬當下峰值，落差源於抱石的高度間歇性。
+
+**實作約定（非官方分類）**：抱石對應肌群建議勾選背部、手臂、肩部、腹部，路線需大量蹬踏時加上腿部、髖部，**胸部不勾**（攀爬幾乎均為拉的動作）。計次方式為一天算一次，不論時長。WHO 2020 與 US PAG 2018 均未提供攀岩之官方肌群對應表。
 
 ---
 
@@ -361,6 +407,15 @@ Karvonen(rest 60, 60% HRR)   = 134.1 bpm
 
 - 2024 Adult Compendium of Physical Activities (ages 19–59), Arizona State University.
 
+**肌力訓練計量與抱石歸屬之文獻**（取自 PubMed，附原始文章 DOI）
+
+- Coleman CJ, McDonough DJ, Pope ZC, Pope CA. Dose-response association of aerobic and muscle-strengthening physical activity with mortality: a national cohort study of 416 420 US adults. *Br J Sports Med.* 2022. [DOI: 10.1136/bjsports-2022-105519](https://doi.org/10.1136/bjsports-2022-105519)
+- Schoenfeld BJ, Ogborn D, Krieger JW. Effects of Resistance Training Frequency on Measures of Muscle Hypertrophy: A Systematic Review and Meta-Analysis. *Sports Med.* 2016;46(11):1689-1697. [DOI: 10.1007/s40279-016-0543-8](https://doi.org/10.1007/s40279-016-0543-8)
+- Grgic J, Schoenfeld BJ, Davies TB, Lazinica B, Krieger JW, Pedisic Z. Effect of Resistance Training Frequency on Gains in Muscular Strength: A Systematic Review and Meta-Analysis. *Sports Med.* 2018;48(5):1207-1220. [DOI: 10.1007/s40279-018-0872-x](https://doi.org/10.1007/s40279-018-0872-x)
+- Callender NA, Hayes TN, Tiller NB. Cardiorespiratory demands of competitive rock climbing. *Appl Physiol Nutr Metab.* 2021;46(2):161-168. [DOI: 10.1139/apnm-2020-0566](https://doi.org/10.1139/apnm-2020-0566)
+- Langer K, Simon C, Wiemeyer J. Strength Training in Climbing: A Systematic Review. *J Strength Cond Res.* 2023;37(3):751-767. [DOI: 10.1519/JSC.0000000000004286](https://doi.org/10.1519/JSC.0000000000004286)
+- MacLean KFE, Dickerson CR. Kinematic and EMG analysis of horizontal bimanual climbing in humans. *J Biomech.* 2019;92:11-18. [DOI: 10.1016/j.jbiomech.2019.05.023](https://doi.org/10.1016/j.jbiomech.2019.05.023)
+
 **公式來源**
 
 - ACSM's Guidelines for Exercise Testing and Prescription（跑步代謝方程式）
@@ -381,6 +436,10 @@ Karvonen(rest 60, 60% HRR)   = 134.1 bpm
 - **技術水準對游泳 MET 之量化修正係數**：provided sources 未提供可套用之公式。本工具僅以文字警語提示，未做數值修正。
 - **水中心率修正之最佳數值**：不同來源給出 −10 至 −15 bpm 之範圍，且菁英族群差距更小（約 −6.7 bpm）。**本工具不對這些數值取平均**，預設採 −12 bpm 並開放使用者調整，同時於說明中並列各來源數值。
 - **報酬遞減之轉折點**：WHO 指出風險下降在超過每週 300 分鐘後趨於平緩，但**目前證據不足以指出確切轉折點**。本工具不對 >300 MEM 做任何效益外推。
+- **抱石的官方肌群對應**：provided sources 未提供攀岩對應哪些主要肌群的官方分類。本工具的建議勾選組合依肌力適應與 EMG 研究推得，屬實作約定，非指引結論。
+- **休閒抱石者的 MET**：provided sources 未提供休閒程度抱石者的實測 MET。現有實測為菁英選手在競賽情境下的峰值，不宜直接套用於一般愛好者。
+- **肌力訓練的最佳劑量**：provided sources 未提供以健康結果（而非肌力／肥大）為終點的最佳組數與反覆次數。指引本身亦未規定組數、次數或時長。
+- **頻率與訓練量的拆分**：現有統合分析多以未訓練者為受試對象，已有訓練經驗者的證據仍不足。
 - **時效性**：指引與 Compendium 均會改版。CONFIG 中所有常數須註記版本年份，建議每 2 年重新查核。
 - **個別化**：本工具為一般性計算，不取代個別臨床評估。
 
