@@ -597,10 +597,20 @@ svg.chart{width:100%;height:auto;display:block}
 
       <h4 id="h-theory-3">三、關鍵限制：3.5 這個數字本身就不準</h4>
       <p>這是整個 MET 體系最根本、也最少被提及的問題：<strong>1 MET = 3.5 mL/kg/min 是一個約定，而非測量常數。</strong></p>
-      <p>這個數值最初源自<strong>單一一位受試者</strong>——一名 70 公斤、40 歲男性的靜息耗氧量。後續在 769 名 18–74 歲成人（含肥胖者）的研究中，實測平均靜息耗氧量僅 <strong>2.6 ± 0.4 mL/kg/min</strong>，亦即 3.5 這個約定<strong>平均高估實際靜息耗氧量達 35%</strong>；以熱量表示則高估約 20%。該研究並發現身體組成可解釋靜息耗氧量 62% 的變異，年齡僅解釋 14%。</p>
+      <p>這個數值最初源自<strong>單一一位受試者</strong>——一名 70 公斤、40 歲男性的靜息耗氧量。後續多項實測研究均顯示實際值低於 3.5，但<strong>高估的幅度因族群而異，差距很大</strong>：</p>
+      <table class="tt">
+        <thead><tr><th>研究族群</th><th>實測靜息 VO₂</th><th>3.5 的高估幅度</th></tr></thead>
+        <tbody>
+          <tr><td>769 名 18–74 歲男女（含肥胖者）</td><td>2.6 ± 0.4 mL/kg/min</td><td><b>約 35%</b></td></tr>
+          <tr><td>125 名 17–38 歲健康男性</td><td>3.21 mL/kg/min（95% CI 3.13–3.30）</td><td><b>約 9%</b></td></tr>
+        </tbody>
+      </table>
+      <p><strong>本工具不對這兩個數值取平均。</strong>差距的來源是可解釋的：年輕健康男性的每公斤靜息代謝率本就高於涵蓋高齡與肥胖者的異質樣本。這正好印證了下一段統合分析的結論——沒有單一數值適用於所有人。你屬於哪一端，決定了熱量數字該打幾折。</p>
+      <p>前者的研究並發現，身體組成可解釋靜息耗氧量 <strong>62%</strong> 的變異，年齡僅解釋 14%；以熱量表示時的高估約為 20%。後者則指出，即使針對單一同質族群建立專屬預測模型，準確度仍然有限（R² 僅 0.22）。</p>
       <p class="src"><span class="tag grade">GRADE: Moderate</span>（大樣本橫斷測量研究，n=769，間接測熱法）出處：Byrne NM, Hills AP, Hunter GR, Weinsier RL, Schutz Y. Metabolic equivalent: one size does not fit all. <em>J Appl Physiol.</em> 2005;99(3):1112-9. 取自 PubMed，<a href="https://doi.org/10.1152/japplphysiol.00023.2004" target="_blank" rel="noopener">DOI: 10.1152/japplphysiol.00023.2004</a></p>
       <p>一項涵蓋 197 篇研究、397 組估計值的統合分析亦得出相同方向的結論：成人靜息代謝率平均為 0.863 kcal/kg/hr（95% CI 0.852–0.874），沿用 1.0 的 MET 約定會使男性高估約 <strong>10%</strong>、女性約 <strong>15%</strong>，特定族群組合可達 <strong>20–30%</strong>。作者明確指出<strong>「沒有任何單一數值適用於所有成人」</strong>。另有研究發現年齡對靜息耗氧量有獨立效應，此約定用於長者時同樣造成高估。</p>
       <p class="src"><span class="tag grade">GRADE: Moderate</span>（統合分析，197 篇研究）出處：McMurray RG, Soares J, Caspersen CJ, McCurdy T. Examining variations of resting metabolic rate of adults: a public health perspective. <em>Med Sci Sports Exerc.</em> 2014;46(7):1352-8. 取自 PubMed，<a href="https://doi.org/10.1249/MSS.0000000000000232" target="_blank" rel="noopener">DOI: 10.1249/MSS.0000000000000232</a></p>
+      <p class="src"><span class="tag grade">GRADE: Moderate</span>（橫斷測量研究，n=125，同質族群故外推性受限）出處：Cunha FA, Midgley AW, Montenegro R, Oliveira RB, Farinatti PTV. Metabolic equivalent concept in apparently healthy men: a re-examination of the standard oxygen uptake value of 3.5 mL·kg⁻¹·min⁻¹. <em>Appl Physiol Nutr Metab.</em> 2013;38(11):1115-9. 取自 PubMed，<a href="https://doi.org/10.1139/apnm-2012-0492" target="_blank" rel="noopener">DOI: 10.1139/apnm-2012-0492</a></p>
       <p class="src"><span class="tag grade">GRADE: Low</span>（單一橫斷研究，n=208，特定族群）出處：Kwan M, Woo J, Kwok T. The standard oxygen consumption value equivalent to one metabolic equivalent (3.5 ml/min/kg) is not appropriate for elderly people. <em>Int J Food Sci Nutr.</em> 2004;55(3):179-82. 取自 PubMed，<a href="https://doi.org/10.1080/09637480410001725201" target="_blank" rel="noopener">DOI: 10.1080/09637480410001725201</a></p>
       <div class="verdict">
         <b>這對你使用本工具的意義</b>
@@ -644,7 +654,15 @@ svg.chart{width:100%;height:auto;display:block}
         <li><strong>有氧</strong>作用於心肺與代謝系統——最大攝氧量、心搏出量、微血管密度、胰島素敏感性、血脂</li>
         <li><strong>肌力</strong>作用於肌肉骨骼系統——肌肉量與肌力（對抗肌少症）、骨密度、平衡與跌倒風險、日常功能能力</li>
       </ul>
-      <p>流行病學證據亦支持此區分：在癌症存活者的分析中，<strong>僅達成肌力建議者的死亡風險未見顯著下降</strong>（HR 0.76–0.94，均未達統計顯著），但<strong>同時達成有氧與肌力建議者風險顯著降低</strong>（HR 0.37–0.64）。前述 41.6 萬人研究亦顯示，肌力訓練的效益是<strong>在有氧運動的基礎上額外疊加</strong>的。</p>
+      <p>流行病學證據亦支持此區分。目前最直接的證據來自一項納入 <strong>50 萬名美國成人</strong>、中位追蹤 10 年（560 萬人年）的前瞻世代研究：研究者將中強度有氧、高強度有氧與肌力訓練交叉組合成 48 個互斥類別，結果發現<strong>全因、心血管與癌症死亡率各自風險最低的組合，全部都包含「每週 ≥2 次肌力訓練」</strong>。</p>
+      <ul>
+        <li>全因死亡率最低組合：HR 0.50（95% CI 0.42–0.59）</li>
+        <li>心血管死亡率最低組合：HR 0.30（95% CI 0.15–0.57）</li>
+        <li>癌症死亡率最低組合：HR 0.44（95% CI 0.23–0.82）</li>
+      </ul>
+      <p>換言之，無論有氧做多少，<strong>沒有任何一個「不含足量肌力訓練」的組合能達到最低風險</strong>。</p>
+      <p class="src"><span class="tag grade">GRADE: Low</span>（觀察性世代研究，n=500,705，自陳式測量；觀察性設計無法確立因果）出處：López-Bueno R, Ahmadi M, Stamatakis E, Yang L, Del Pozo Cruz B. Prospective Associations of Different Combinations of Aerobic and Muscle-Strengthening Activity With All-Cause, Cardiovascular, and Cancer Mortality. <em>JAMA Intern Med.</em> 2023;183(9):982-990. 取自 PubMed，<a href="https://doi.org/10.1001/jamainternmed.2023.3093" target="_blank" rel="noopener">DOI: 10.1001/jamainternmed.2023.3093</a></p>
+      <p>另在癌症存活者的分析中，<strong>僅達成肌力建議者的死亡風險未見顯著下降</strong>（HR 0.76–0.94，均未達統計顯著），但<strong>同時達成兩項建議者風險顯著降低</strong>（HR 0.37–0.64）。此結果限於該特定族群，不宜逕行外推至一般成人。前述 41.6 萬人研究亦顯示，肌力訓練的效益是<strong>在有氧運動的基礎上額外疊加</strong>的。</p>
       <p>這就是本工具堅持<strong>綠燈必須兩項皆達標</strong>的理由：有氧再多也無法補上肌力的缺口，反之亦然。</p>
       <p class="src"><span class="tag grade">GRADE: Low</span>（觀察性研究，特定族群為癌症存活者，n=13,997）出處：Tarasenko YN, Linder DF, Miller EA. Muscle-strengthening and aerobic activities and mortality among 3+ year cancer survivors in the U.S. <em>Cancer Causes Control.</em> 2018;29(4-5):475-484. 取自 PubMed，<a href="https://doi.org/10.1007/s10552-018-1017-0" target="_blank" rel="noopener">DOI: 10.1007/s10552-018-1017-0</a></p>
 
@@ -655,9 +673,21 @@ svg.chart{width:100%;height:auto;display:block}
       <h4 id="h-theory-9">九、心率模組的理論基礎</h4>
       <p>心率是相對強度的另一種測量方式，因為它直接反映個人的循環系統負荷。本工具採用兩條公式：</p>
       <ul>
-        <li><strong>Tanaka 公式</strong>：HRmax = 208 − 0.7 × 年齡。優於舊有的「220 − 年齡」，後者在長者族群系統性低估最大心率</li>
+        <li><strong>Tanaka 公式</strong>：HRmax = 208 − 0.7 × 年齡。優於舊有的「220 − 年齡」，後者在 30 歲以上族群系統性低估最大心率</li>
         <li><strong>Karvonen 公式</strong>：目標心率 = 靜息心率 + 強度% × (最大心率 − 靜息心率)。它以<strong>心跳儲備（HRR）</strong>而非最大心率的百分比計算，納入了個人靜息心率，因此比單純的 %HRmax 更貼近相對強度</li>
       </ul>
+
+      <div class="verdict">
+        <b>重要限制：年齡公式無法提供個人層級的準確度</b>
+        Tanaka 優於 220 − 年齡是明確的，但這<strong>不代表問題已經解決</strong>。一項比較七條常用公式的研究（n=230，實測最大運動測試）發現，各公式的平均偏誤雖小（−3 至 +6 bpm），但<strong>一致性界限寬達約 ±18–24 bpm</strong>；Tanaka 雖屬表現較佳者（MAE 與 RMSE 較低），研究結論仍明確指出<strong>沒有任何一條公式具備高度的個人層級準確度</strong>。<br>
+        <strong>因此請把心率區間當成粗略參考，而非精確處方。</strong>若你的實際運動心率與公式推算持續不符，相信實測值與自覺強度（RPE／talk test），不要相信公式。
+      </div>
+      <p class="src"><span class="tag grade">GRADE: Low</span>（回溯性分析，n=230，76% 男性）出處：Martin J, Lindsey B, Gerrity C, Ambegaonkar J. Exploratory analysis of the accuracy of age-based maximal heart rate equations across cardiorespiratory fitness levels. <em>PLoS One.</em> 2025;20(10):e0335842. 取自 PubMed，<a href="https://doi.org/10.1371/journal.pone.0335842" target="_blank" rel="noopener">DOI: 10.1371/journal.pone.0335842</a></p>
+
+      <p><strong>不同來源給出不同公式，本工具不取平均</strong>：HUNT Fitness Study 以 3,320 名健康成人實測，得出的公式為 <strong>HRmax = 211 − 0.64 × 年齡</strong>（估計標準誤 10.8 bpm），與 Tanaka 的 208 − 0.7 × 年齡並不相同，且該研究同樣發現既有公式在 30 歲以上者<strong>低估</strong>實測最大心率。以 40 歲為例，Tanaka 推得 180 bpm、HUNT 推得 185 bpm，差距 5 bpm。</p>
+      <p>本工具採用 Tanaka，理由是它在上述七公式比較中屬誤差較低者、且為現行運動處方文獻最常引用的版本；此為<strong>選擇</strong>而非「最正確」的宣稱。兩個數值並列於此供你判斷，不合併、不取平均。</p>
+      <p class="src"><span class="tag grade">GRADE: Moderate</span>（大樣本橫斷實測研究，n=3,320）出處：Nes BM, Janszky I, Wisløff U, Støylen A, Karlsen T. Age-predicted maximal heart rate in healthy subjects: The HUNT fitness study. <em>Scand J Med Sci Sports.</em> 2013;23(6):697-704. 取自 PubMed，<a href="https://doi.org/10.1111/j.1600-0838.2012.01445.x" target="_blank" rel="noopener">DOI: 10.1111/j.1600-0838.2012.01445.x</a></p>
+
       <p>游泳另需修正：水中的最大心率低於陸上，若直接套用陸上區間會系統性低估游泳強度。詳見「設定 → 心率模組」內的說明與其證據限制（<span class="tag grade">GRADE: Low</span>）。</p>
       <p class="src">出處：Tanaka H, et al. <em>J Am Coll Cardiol.</em> 2001；DiCarlo LJ, et al. <em>Int J Sports Med.</em> 1991;12(3):309-12。</p>
 
@@ -814,10 +844,13 @@ svg.chart{width:100%;height:auto;display:block}
         <li><strong>混合泳姿之 MET</strong>：provided sources 未提供官方加權方法。本工具採線性加權為<code>[實作約定]</code>。</li>
         <li><strong>報酬遞減轉折點</strong>：WHO 指出風險下降在超過每週 300 分鐘後趨於平緩，但證據不足以指出確切轉折點。本工具不對 &gt;300 MEM 做任何效益外推。</li>
         <li><strong>1 MET = 3.5 mL/kg/min 的約定</strong>：此值源自單一受試者，已知系統性高估實際靜息代謝率（平均 35%，以熱量計約 10–30% 依族群而異）。provided sources 未提供可直接套用的個人化校正係數，本工具<strong>不對此做數值修正</strong>，僅於熱量估算標示誤差範圍。</li>
+        <li><strong>年齡推估 HRmax 的個人準確度</strong>：現有公式（含 Tanaka）平均偏誤雖小，但一致性界限寬達約 ±18–24 bpm，無任何公式具備高度個人層級準確度。不同大型研究給出的公式亦不相同（Tanaka 208 − 0.7×年齡 vs HUNT 211 − 0.64×年齡）。<strong>本工具不對這些公式取平均</strong>，採用 Tanaka 並於說明中並列各來源數值。provided sources 未提供可靠的個人化校正方法。</li>
+        <li><strong>靜息代謝率的族群差異</strong>：實測靜息 VO₂ 因族群而異（異質樣本 2.6 vs 年輕健康男性 3.21 mL/kg/min），3.5 的高估幅度介於約 9–35%。<strong>本工具不對這些數值取平均</strong>，亦不提供個人化校正。</li>
         <li><strong>時效性</strong>：指引與 Compendium 均會改版，建議每 2 年重新查核。</li>
         <li><strong>個別化</strong>：本頁為一般性說明，不取代個別臨床評估。有心血管疾病史、慢性病或特殊健康考量者，運動處方應由具運動醫學專業之醫師個別評估。</li>
       </ul>
       <p class="src">所有 PubMed 文獻引用均取自 PubMed 資料庫，並附原始文章 DOI 連結。</p>
+      <p class="src"><strong>覆核紀錄</strong>：本頁數值曾經外部專業人士審閱，並於審閱後逐篇對照 PubMed 原始摘要重新核對。經覆核之具體數值包括 Byrne 2005（2.6 ± 0.4 mL/kg/min、35%、62%/14%）、McMurray 2014（0.863 kcal/kg/hr、95% CI 0.852–0.874、10%/15%/20–30%）、Coleman 2022（HR 0.85／0.73／0.89／0.99 及其信賴區間）、Tarasenko 2018（HR 0.37–0.64／0.76–0.94），均與原始摘要一致。審閱意見促成之修正：補充 HRmax 公式的個人準確度限制與 HUNT 並列公式、改以 50 萬人世代研究作為有氧與肌力不可折抵之主要證據、並將靜息代謝率之高估幅度改以族群區間並列呈現。</p>
     </div>
   </section>
 
@@ -855,7 +888,7 @@ svg.chart{width:100%;height:auto;display:block}
           </div>
           <div class="callout">
             <strong>說明</strong>：DiCarlo 等（1991）發現 tethered swimming 之 peak HR 較年齡預測值低 13 bpm、較跑步機低 11 bpm，但兩者運動後血乳酸相當（8.0 vs 8.1 mmol/L），代表<strong>代謝負荷相同而心率較低</strong>。若直接套用陸上心率區間，將系統性低估游泳強度。<br>
-            <strong>限制</strong>：菁英游泳者的陸／水 HRmax 差距可能僅約 6.7 ± 5.3 bpm，個體差異大。腕式光學心率感測器在水中可靠性差。此修正之證據等級 <span class="tag grade">GRADE: Low</span>（單一橫斷性研究，n=34）。本工具不對各來源數值取平均，預設 −12 bpm 並開放調整。
+            <strong>限制</strong>：菁英游泳者的陸／水 HRmax 差距可能僅約 6.7 ± 5.3 bpm，個體差異大。腕式光學心率感測器在水中可靠性差。此外，年齡推估的 HRmax 本身即無個人層級準確度（一致性界限約 ±18–24 bpm），故以下數值僅為粗略參考，不應作為精確處方。此修正之證據等級 <span class="tag grade">GRADE: Low</span>（單一橫斷性研究，n=34）。本工具不對各來源數值取平均，預設 −12 bpm 並開放調整。
           </div>
         </div>
       </details>
