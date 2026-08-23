@@ -89,6 +89,7 @@ npx http-server . -p 8080
 
 App 內建的說明頁，可由「新增紀錄」各欄位旁的 **?** 按鈕直接跳轉至對應段落。內容依本文件第 0 節之 GRADE 宣告標示等級與出處，並置於實質內容之前。涵蓋：
 
+- **整體運動建議與醫學理論**（10 小節）：指引建議全貌、MET 的定義與物理基礎、`1 MET = 3.5` 約定的系統性偏誤、高強度計 2 倍的理論根據、absolute vs relative intensity、劑量-反應曲線形狀、有氧與肌力不可折抵的生理學理由、MET-minutes 的角色、心率公式基礎、以及本工具能與不能回答什麼
 - **各欄位怎麼填**：活動項目、時長、主觀強度覆寫、計入肌力訓練、主要肌群、強度 moderate 以上、備註
 - **抱石／攀岩怎麼記**：MET 該填多少、算不算肌力訓練、該怎麼計次才知道達標
 - **重量訓練需要計算 MET 嗎**
@@ -407,6 +408,16 @@ Karvonen(rest 60, 60% HRR)   = 134.1 bpm
 
 - 2024 Adult Compendium of Physical Activities (ages 19–59), Arizona State University.
 
+**MET 約定之效度**（取自 PubMed，附原始文章 DOI）
+
+- Byrne NM, Hills AP, Hunter GR, Weinsier RL, Schutz Y. Metabolic equivalent: one size does not fit all. *J Appl Physiol.* 2005;99(3):1112-9. [DOI: 10.1152/japplphysiol.00023.2004](https://doi.org/10.1152/japplphysiol.00023.2004)
+- McMurray RG, Soares J, Caspersen CJ, McCurdy T. Examining variations of resting metabolic rate of adults: a public health perspective. *Med Sci Sports Exerc.* 2014;46(7):1352-8. [DOI: 10.1249/MSS.0000000000000232](https://doi.org/10.1249/MSS.0000000000000232)
+- Kwan M, Woo J, Kwok T. The standard oxygen consumption value equivalent to one metabolic equivalent (3.5 ml/min/kg) is not appropriate for elderly people. *Int J Food Sci Nutr.* 2004;55(3):179-82. [DOI: 10.1080/09637480410001725201](https://doi.org/10.1080/09637480410001725201)
+
+**有氧與肌力不可折抵之證據**
+
+- Tarasenko YN, Linder DF, Miller EA. Muscle-strengthening and aerobic activities and mortality among 3+ year cancer survivors in the U.S. *Cancer Causes Control.* 2018;29(4-5):475-484. [DOI: 10.1007/s10552-018-1017-0](https://doi.org/10.1007/s10552-018-1017-0)
+
 **肌力訓練計量與抱石歸屬之文獻**（取自 PubMed，附原始文章 DOI）
 
 - Coleman CJ, McDonough DJ, Pope ZC, Pope CA. Dose-response association of aerobic and muscle-strengthening physical activity with mortality: a national cohort study of 416 420 US adults. *Br J Sports Med.* 2022. [DOI: 10.1136/bjsports-2022-105519](https://doi.org/10.1136/bjsports-2022-105519)
@@ -436,6 +447,7 @@ Karvonen(rest 60, 60% HRR)   = 134.1 bpm
 - **技術水準對游泳 MET 之量化修正係數**：provided sources 未提供可套用之公式。本工具僅以文字警語提示，未做數值修正。
 - **水中心率修正之最佳數值**：不同來源給出 −10 至 −15 bpm 之範圍，且菁英族群差距更小（約 −6.7 bpm）。**本工具不對這些數值取平均**，預設採 −12 bpm 並開放使用者調整，同時於說明中並列各來源數值。
 - **報酬遞減之轉折點**：WHO 指出風險下降在超過每週 300 分鐘後趨於平緩，但**目前證據不足以指出確切轉折點**。本工具不對 >300 MEM 做任何效益外推。
+- **`1 MET = 3.5 mL/kg/min` 的約定**：此值源自單一受試者（70 kg、40 歲男性），已知系統性高估實際靜息代謝率——大樣本實測平均靜息耗氧量為 2.6 ± 0.4 mL/kg/min（高估約 35%）；統合分析顯示以熱量計男性高估約 10%、女性約 15%，特定族群可達 20–30%。provided sources 未提供可直接套用的個人化校正係數，本工具**不對此做數值修正**，僅於熱量估算標示誤差範圍。達標判定不受影響，因指引門檻與本工具計算採同一套約定，偏誤同向抵消。
 - **抱石的官方肌群對應**：provided sources 未提供攀岩對應哪些主要肌群的官方分類。本工具的建議勾選組合依肌力適應與 EMG 研究推得，屬實作約定，非指引結論。
 - **休閒抱石者的 MET**：provided sources 未提供休閒程度抱石者的實測 MET。現有實測為菁英選手在競賽情境下的峰值，不宜直接套用於一般愛好者。
 - **肌力訓練的最佳劑量**：provided sources 未提供以健康結果（而非肌力／肥大）為終點的最佳組數與反覆次數。指引本身亦未規定組數、次數或時長。

@@ -389,7 +389,10 @@ svg.chart{width:100%;height:auto;display:block}
 
       <!-- 跑步模組 -->
       <div id="modRun" class="hidden">
-        <div class="callout" style="margin-top:0">跑步採 ACSM 平地跑步代謝方程式動態計算 MET，不使用查表值。<span class="tag grade">[公式推導]</span></div>
+        <div class="callout" style="margin-top:0">跑步採 ACSM 平地跑步代謝方程式動態計算 MET，不使用查表值。<span class="tag grade">[公式推導]</span><br>
+          此方程式適用於<strong>約 8 km/hr 以上</strong>的真實跑步；更慢且實際上是走路時，請改用「快走」項目，否則會高估 MET。
+          <button type="button" class="helpbtn" data-help="h-theory-2" aria-label="跑步公式說明">?</button>
+        </div>
         <div class="grid2">
           <div class="field">
             <label for="fSpeed">速度（km/hr）</label>
@@ -524,6 +527,7 @@ svg.chart{width:100%;height:auto;display:block}
     <div class="card">
       <h2>快速跳轉</h2>
       <div class="tocgrid">
+        <a href="#h-theory">整體建議與醫學理論</a>
         <a href="#h-opts">各欄位怎麼填</a>
         <a href="#h-boulder">抱石／攀岩怎麼記</a>
         <a href="#h-met">重量訓練要算 MET 嗎</a>
@@ -560,6 +564,122 @@ svg.chart{width:100%;height:auto;display:block}
         <li><code>[實作約定]</code> — 本工具為了可運算而自行採用的規則，<strong>非實證結論</strong></li>
       </ul>
       <p class="src">本頁出現之等級：Strong/Conditional recommendation 搭配 Moderate certainty（指引建議）、Low（單一小型研究）、以及上列四種標籤。</p>
+    </div>
+
+    <div class="card">
+      <h2 id="h-theory">整體運動建議與醫學理論</h2>
+      <p>這一節說明本工具「為什麼這樣算」。每一個換算背後都有明確的生理學根據，也都有已知的誤差來源——兩者一併說明，你才能判斷什麼時候該相信這些數字、什麼時候不該。</p>
+
+      <h4 id="h-theory-1">一、指引建議的全貌（成人 18–64 歲）</h4>
+      <p>WHO 2020 與 US PAG 2018 的成人建議由三個各自獨立的部分組成：</p>
+      <table class="tt">
+        <thead><tr><th>建議</th><th>內容</th><th>強度與確定性</th></tr></thead>
+        <tbody>
+          <tr><td><b>有氧（基本）</b></td><td>每週 150–300 分鐘中強度，<b>或</b> 75–150 分鐘高強度，<b>或</b>兩者等效組合</td><td>Strong, Moderate</td></tr>
+          <tr><td><b>有氧（額外）</b></td><td>超過上述上限可獲得額外健康效益</td><td><b>Conditional</b>, Moderate</td></tr>
+          <tr><td><b>肌力</b></td><td>每週 ≥2 天，涵蓋全部主要肌群，moderate 以上強度</td><td>Strong, Moderate</td></tr>
+        </tbody>
+      </table>
+      <p>另有兩項貫穿全篇的原則：<strong>應減少久坐時間</strong>，以及<strong>「有動總比不動好」</strong>——未達建議量的活動仍具健康效益，不應視為無效。這是本工具不對未達標者使用紅色警示語氣的原因。</p>
+      <p class="src">出處：WHO. Guidelines on Physical Activity and Sedentary Behaviour. 2020；U.S. DHHS. Physical Activity Guidelines for Americans, 2nd ed. 2018。</p>
+
+      <h4 id="h-theory-2">二、MET：所有換算的起點</h4>
+      <p><strong>MET（metabolic equivalent of task，代謝當量）</strong>是把各種活動的能量成本表達成「靜息代謝率的幾倍」的單位。定義上：</p>
+      <p style="font-family:var(--mono);font-size:12.5px">1 MET = 3.5 mL O₂ / kg / min　→　MET = VO₂ ÷ 3.5</p>
+      <p>之所以用 <strong>mL/kg/min</strong>（每公斤體重）而非絕對耗氧量，是因為能量成本大致與體重成正比。除以體重之後，同一個動作對不同體型的人可以用同一個數字表示——這是 MET 能成為通用單位的原因，也是熱量公式 <code>kcal = MET × 體重 × 時數</code> 要把體重乘回去的原因。</p>
+      <p><strong>跑步為什麼能用公式而不查表</strong>：平地跑步的耗氧量與速度呈線性關係，ACSM 代謝方程式即為此線性關係——</p>
+      <p style="font-family:var(--mono);font-size:12.5px">VO₂ = 0.2 × 速度(m/min) + 3.5</p>
+      <p>其中 <code>0.2</code> 為水平移動每 m/min 的耗氧成本，<code>3.5</code> 為靜息項。因為關係明確，跑步不需要查表，直接由速度算出 MET 即可，精確度也優於查表。</p>
+      <div class="verdict">
+        <b>此公式的適用範圍</b>
+        ACSM 跑步方程式適用於<strong>約 8 km/hr 以上</strong>的真實跑步。若速度更慢且實際上是走路，其能量成本機制不同（走路另有專屬方程式），此時應改用「快走」項目，否則會高估 MET。
+      </div>
+
+      <h4 id="h-theory-3">三、關鍵限制：3.5 這個數字本身就不準</h4>
+      <p>這是整個 MET 體系最根本、也最少被提及的問題：<strong>1 MET = 3.5 mL/kg/min 是一個約定，而非測量常數。</strong></p>
+      <p>這個數值最初源自<strong>單一一位受試者</strong>——一名 70 公斤、40 歲男性的靜息耗氧量。後續在 769 名 18–74 歲成人（含肥胖者）的研究中，實測平均靜息耗氧量僅 <strong>2.6 ± 0.4 mL/kg/min</strong>，亦即 3.5 這個約定<strong>平均高估實際靜息耗氧量達 35%</strong>；以熱量表示則高估約 20%。該研究並發現身體組成可解釋靜息耗氧量 62% 的變異，年齡僅解釋 14%。</p>
+      <p class="src"><span class="tag grade">GRADE: Moderate</span>（大樣本橫斷測量研究，n=769，間接測熱法）出處：Byrne NM, Hills AP, Hunter GR, Weinsier RL, Schutz Y. Metabolic equivalent: one size does not fit all. <em>J Appl Physiol.</em> 2005;99(3):1112-9. 取自 PubMed，<a href="https://doi.org/10.1152/japplphysiol.00023.2004" target="_blank" rel="noopener">DOI: 10.1152/japplphysiol.00023.2004</a></p>
+      <p>一項涵蓋 197 篇研究、397 組估計值的統合分析亦得出相同方向的結論：成人靜息代謝率平均為 0.863 kcal/kg/hr（95% CI 0.852–0.874），沿用 1.0 的 MET 約定會使男性高估約 <strong>10%</strong>、女性約 <strong>15%</strong>，特定族群組合可達 <strong>20–30%</strong>。作者明確指出<strong>「沒有任何單一數值適用於所有成人」</strong>。另有研究發現年齡對靜息耗氧量有獨立效應，此約定用於長者時同樣造成高估。</p>
+      <p class="src"><span class="tag grade">GRADE: Moderate</span>（統合分析，197 篇研究）出處：McMurray RG, Soares J, Caspersen CJ, McCurdy T. Examining variations of resting metabolic rate of adults: a public health perspective. <em>Med Sci Sports Exerc.</em> 2014;46(7):1352-8. 取自 PubMed，<a href="https://doi.org/10.1249/MSS.0000000000000232" target="_blank" rel="noopener">DOI: 10.1249/MSS.0000000000000232</a></p>
+      <p class="src"><span class="tag grade">GRADE: Low</span>（單一橫斷研究，n=208，特定族群）出處：Kwan M, Woo J, Kwok T. The standard oxygen consumption value equivalent to one metabolic equivalent (3.5 ml/min/kg) is not appropriate for elderly people. <em>Int J Food Sci Nutr.</em> 2004;55(3):179-82. 取自 PubMed，<a href="https://doi.org/10.1080/09637480410001725201" target="_blank" rel="noopener">DOI: 10.1080/09637480410001725201</a></p>
+      <div class="verdict">
+        <b>這對你使用本工具的意義</b>
+        <strong>熱量數字要打折看</strong>——本工具標示的 ±15–20% 誤差正是源自於此，且偏誤方向是<strong>系統性高估</strong>，體重較重、年齡較長者高估更多。<br>
+        <strong>但達標判定不受影響。</strong>指引的門檻（150/300 MEM、2 天肌力）本身就是用同一套 MET 約定建立的，偏誤在建立門檻與計算成果時<strong>同向抵消</strong>。所以熱量僅供參考，達標燈號仍然可信。
+      </div>
+
+      <h4 id="h-theory-4">四、為什麼高強度算兩倍</h4>
+      <p>強度分級的邊界並非隨意選定：moderate 為 3.0–5.9 MET，vigorous 為 ≥6.0 MET，而 <strong>6.0 恰為 3.0 的兩倍</strong>。因此在同樣時間內，高強度活動累積的能量成本約為中強度的兩倍，反過來說，達成同樣的能量累積只需<strong>一半的時間</strong>。這就是等效換算式的由來：</p>
+      <p style="font-family:var(--mono);font-size:12.5px">MEM = 中強度分鐘 + 2 × 高強度分鐘</p>
+      <p>也是為什麼指引可以並列「150 分鐘中強度」與「75 分鐘高強度」兩種等價寫法。</p>
+      <p>此換算隱含一個假設：<strong>健康效益主要由總活動量決定，而非由強度分布決定。</strong>這是指引採用的簡化，不是獨立的實證結論。</p>
+      <p class="src"><code>[指引慣例]</code> 出處：US PAG 2nd ed. (2018) 之 moderate-intensity equivalent 概念；WHO 2020 亦採同一約定。</p>
+
+      <h4 id="h-theory-5">五、絕對強度 vs 相對強度：本工具最大的限制</h4>
+      <p>MET 是 <strong>absolute intensity</strong>（絕對強度）指標——同一個活動對所有人給出同一個數字。但真正決定生理反應的是 <strong>relative intensity</strong>（相對強度），也就是該活動占用了<strong>你個人</strong>最大能力的幾成。</p>
+      <p>舉例：6 METs 的活動，對最大攝氧量僅 25 mL/kg/min 的久坐者而言接近其極限；對最大攝氧量 60 mL/kg/min 的耐力運動員而言只是輕鬆熱身。MET 分級對兩者卻標示相同。</p>
+      <p><strong>方向是可預測的</strong>：心肺適能越好，同一 MET 值對你的實際相對強度越低；體能較差者則相反，查表值可能低估你實際承受的負荷。</p>
+      <div class="verdict">
+        <b>本工具的因應方式</b>
+        <strong>主觀強度覆寫</strong>（talk test / RPE）是唯一能把絕對強度校正回相對強度的機制。talk test 與 RPE 測量的是你自己的生理反應，天然就是相對指標。當你覺得查表值與實際感受落差明顯時，請相信自己的感受。
+      </div>
+
+      <h4 id="h-theory-6">六、劑量-反應關係的形狀</h4>
+      <p>運動與死亡風險的關係<strong>不是直線</strong>，而是先陡後平的曲線。一項納入 41.6 萬名美國成人的世代研究顯示：</p>
+      <ul>
+        <li>相較於完全不運動，每週僅 <strong>1 小時</strong>有氧運動即帶來明顯風險下降（HR 0.85, 95% CI 0.83–0.86）</li>
+        <li>效益持續累積至每週約 <strong>3 小時</strong>後趨於平緩（HR 0.73, 95% CI 0.71–0.75）</li>
+        <li>超過此範圍後，長者僅見小幅進一步下降</li>
+      </ul>
+      <p>這個形狀有兩個實務意涵，也直接決定了本工具的介面語氣：</p>
+      <ul>
+        <li><strong>從零開始的那一段最划算。</strong>從完全不動變成每週動一小時，效益遠大於從 3 小時加到 5 小時。所以任何時長都值得記錄，本工具不設最小時長門檻。</li>
+        <li><strong>超過 300 MEM 不是目標，是額外選項。</strong>指引將其列為 conditional recommendation，且證據不足以指出確切的報酬遞減轉折點。本工具因此不對 &gt;300 做任何效益外推，也不設活動量上限或負面提示。</li>
+      </ul>
+      <p class="src"><span class="tag grade">GRADE: Low</span>（觀察性世代研究，自陳式測量，殘餘干擾無法排除）出處：Coleman CJ, McDonough DJ, Pope ZC, Pope CA. <em>Br J Sports Med.</em> 2022. 取自 PubMed，<a href="https://doi.org/10.1136/bjsports-2022-105519" target="_blank" rel="noopener">DOI: 10.1136/bjsports-2022-105519</a></p>
+
+      <h4 id="h-theory-7">七、為什麼有氧與肌力不能互相折抵</h4>
+      <p>兩者訓練的是<strong>不同的生理系統</strong>，帶來的適應無法互相替代：</p>
+      <ul>
+        <li><strong>有氧</strong>作用於心肺與代謝系統——最大攝氧量、心搏出量、微血管密度、胰島素敏感性、血脂</li>
+        <li><strong>肌力</strong>作用於肌肉骨骼系統——肌肉量與肌力（對抗肌少症）、骨密度、平衡與跌倒風險、日常功能能力</li>
+      </ul>
+      <p>流行病學證據亦支持此區分：在癌症存活者的分析中，<strong>僅達成肌力建議者的死亡風險未見顯著下降</strong>（HR 0.76–0.94，均未達統計顯著），但<strong>同時達成有氧與肌力建議者風險顯著降低</strong>（HR 0.37–0.64）。前述 41.6 萬人研究亦顯示，肌力訓練的效益是<strong>在有氧運動的基礎上額外疊加</strong>的。</p>
+      <p>這就是本工具堅持<strong>綠燈必須兩項皆達標</strong>的理由：有氧再多也無法補上肌力的缺口，反之亦然。</p>
+      <p class="src"><span class="tag grade">GRADE: Low</span>（觀察性研究，特定族群為癌症存活者，n=13,997）出處：Tarasenko YN, Linder DF, Miller EA. Muscle-strengthening and aerobic activities and mortality among 3+ year cancer survivors in the U.S. <em>Cancer Causes Control.</em> 2018;29(4-5):475-484. 取自 PubMed，<a href="https://doi.org/10.1007/s10552-018-1017-0" target="_blank" rel="noopener">DOI: 10.1007/s10552-018-1017-0</a></p>
+
+      <h4 id="h-theory-8">八、MET-minutes 的角色</h4>
+      <p>MET-min = Σ(MET × 分鐘)，是<strong>總活動量</strong>的指標，與 MEM 的差別在於它保留了強度的權重差異，而非壓縮成中強度等效值。</p>
+      <p>本工具將其列為<strong>輔助指標而非達標判準</strong>，原因是指引的門檻是以分鐘數與天數定義的，並未以 MET-min 設定官方門檻。500–1000 MET-min/週 的參考帶用於觀察趨勢，不用於判定成敗。</p>
+
+      <h4 id="h-theory-9">九、心率模組的理論基礎</h4>
+      <p>心率是相對強度的另一種測量方式，因為它直接反映個人的循環系統負荷。本工具採用兩條公式：</p>
+      <ul>
+        <li><strong>Tanaka 公式</strong>：HRmax = 208 − 0.7 × 年齡。優於舊有的「220 − 年齡」，後者在長者族群系統性低估最大心率</li>
+        <li><strong>Karvonen 公式</strong>：目標心率 = 靜息心率 + 強度% × (最大心率 − 靜息心率)。它以<strong>心跳儲備（HRR）</strong>而非最大心率的百分比計算，納入了個人靜息心率，因此比單純的 %HRmax 更貼近相對強度</li>
+      </ul>
+      <p>游泳另需修正：水中的最大心率低於陸上，若直接套用陸上區間會系統性低估游泳強度。詳見「設定 → 心率模組」內的說明與其證據限制（<span class="tag grade">GRADE: Low</span>）。</p>
+      <p class="src">出處：Tanaka H, et al. <em>J Am Coll Cardiol.</em> 2001；DiCarlo LJ, et al. <em>Int J Sports Med.</em> 1991;12(3):309-12。</p>
+
+      <h4 id="h-theory-10">十、總結：這個工具能與不能回答什麼</h4>
+      <table class="tt">
+        <thead><tr><th>可信度較高</th><th>僅供參考</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>是否達成指引建議量（門檻與計算採同一套約定，偏誤同向抵消）</td>
+            <td>熱量估算（系統性高估，個體差異可達 ±20% 以上）</td>
+          </tr>
+          <tr>
+            <td>週與週之間的相對變化趨勢</td>
+            <td>單次活動的絕對能量消耗</td>
+          </tr>
+          <tr>
+            <td>肌群覆蓋的缺漏（純邏輯判定，不涉及估算）</td>
+            <td>MET 查表值對個人的準確度（尤其游泳、攀岩）</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>本工具為一般性計算，不構成醫療建議，亦不取代個別臨床評估。若有心血管疾病史、慢性病或特殊健康考量，運動處方應由具運動醫學專業之醫師個別評估。</p>
     </div>
 
     <div class="card">
@@ -693,6 +813,7 @@ svg.chart{width:100%;height:auto;display:block}
         <li><strong>頻率與訓練量的拆分</strong>：現有統合分析多以未訓練者為受試對象，已有訓練經驗者的證據仍不足。</li>
         <li><strong>混合泳姿之 MET</strong>：provided sources 未提供官方加權方法。本工具採線性加權為<code>[實作約定]</code>。</li>
         <li><strong>報酬遞減轉折點</strong>：WHO 指出風險下降在超過每週 300 分鐘後趨於平緩，但證據不足以指出確切轉折點。本工具不對 &gt;300 MEM 做任何效益外推。</li>
+        <li><strong>1 MET = 3.5 mL/kg/min 的約定</strong>：此值源自單一受試者，已知系統性高估實際靜息代謝率（平均 35%，以熱量計約 10–30% 依族群而異）。provided sources 未提供可直接套用的個人化校正係數，本工具<strong>不對此做數值修正</strong>，僅於熱量估算標示誤差範圍。</li>
         <li><strong>時效性</strong>：指引與 Compendium 均會改版，建議每 2 年重新查核。</li>
         <li><strong>個別化</strong>：本頁為一般性說明，不取代個別臨床評估。有心血管疾病史、慢性病或特殊健康考量者，運動處方應由具運動醫學專業之醫師個別評估。</li>
       </ul>
