@@ -403,7 +403,8 @@ svg.chart{width:100%;height:auto;display:block}
             <input type="number" id="fPace" min="0" step="0.01" inputmode="decimal" placeholder="例：6.67">
           </div>
         </div>
-        <p class="muted" id="runMetLive" style="margin:-4px 0 12px"></p>
+        <p class="muted" id="runMetLive" style="margin:-4px 0 8px"></p>
+        <div class="callout hidden" id="runSpeedWarn" style="border-left-color:var(--red);margin-top:0"></div>
       </div>
 
       <!-- 游泳模組 -->
@@ -1014,6 +1015,12 @@ const CONFIG = {
     ]
   },
 
+  /** 4.1 ACSM 跑步方程式之適用範圍 [公式推導] */
+  running: {
+    // 低於此速度時，若實際上是步行，其能量成本機制不同，套用跑步方程式會高估
+    minValidSpeedKmh: 8.0
+  },
+
   /** 8. 熱量估算誤差 */
   kcal: { errorPct: '±15–20%', type: 'gross（總消耗）' },
 
@@ -1088,6 +1095,22 @@ function runningMET(speedKmh) {
 function paceToSpeedKmh(minPerKm) { return minPerKm > 0 ? 60 / minPerKm : 0; }
 /** 速度（km/hr）→ 配速（min/km） */
 function speedKmhToPace(speedKmh) { return speedKmh > 0 ? 60 / speedKmh : 0; }
+
+/**
+ * 檢查跑步速度是否落在 ACSM 方程式的適用範圍。
+ * 回傳 null 表示適用；否則回傳警示資訊。
+ * 注意：低於下限並非一律錯誤——真正的慢跑仍可套用，只是準確度下降；
+ * 但若實際上是「走」，則應改用步行項目，否則會高估 MET。
+ */
+function runningSpeedCheck(speedKmh) {
+  if (!(speedKmh > 0)) return null;
+  if (speedKmh >= CONFIG.running.minValidSpeedKmh) return null;
+  return {
+    belowRange: true,
+    minSpeedKmh: CONFIG.running.minValidSpeedKmh,
+    minPaceMinPerKm: 60 / CONFIG.running.minValidSpeedKmh
+  };
+}
 
 /** 3.1 由 MET 判定強度分級；邊界 MET >= 6.0 判為 vigorous */
 function classifyIntensity(met) {
@@ -1329,6 +1352,23 @@ function runSelfTests() {
       actual: '天數=' + s.days + '（' + (s.daysOk ? '達標' : '未達標') + '）、缺漏肌群=' + (missingZh || '無') + ' → 肌力' + (s.met ? '達標' : '未達標'),
       pass: s.days === 2 && s.daysOk === true && s.groupsOk === false && s.met === false &&
             s.missing.length === 1 && s.missing[0].id === 'abdomen' });
+  })();
+
+  // TC-10：跑步速度適用範圍檢查（邊界含 8.0）
+  (function () {
+    const at9 = runningSpeedCheck(9);
+    const at8 = runningSpeedCheck(8.0);
+    const at79 = runningSpeedCheck(7.9);
+    const at5 = runningSpeedCheck(5);
+    const met5 = runningMET(5);
+    const pass = at9 === null && at8 === null && at79 !== null && at79.belowRange === true &&
+                 at5 !== null && at5.minSpeedKmh === 8.0;
+    T.push({ id: 'TC-10', name: '跑步速度適用範圍（ACSM 方程式下限 8 km/hr）',
+      expected: '9→適用；8.0→適用（邊界含）；7.9→警示；5→警示',
+      actual: '9→' + (at9 ? '警示' : '適用') + '；8.0→' + (at8 ? '警示' : '適用') +
+              '；7.9→' + (at79 ? '警示' : '適用') + '；5→' + (at5 ? '警示' : '適用') +
+              '（5 km/hr 若誤用跑步公式得 MET ' + round(met5, 2) + '，高於快走 5.6 km/hr 查表值 4.3）',
+      pass: pass });
   })();
 
   // TC-9：短時長活動（不得設最小時長門檻）
@@ -1648,6 +1688,25 @@ function runSelfTests() {
       $('runMetLive').textContent = sp > 0
         ? '速度 ' + round(sp, 2) + ' km/hr ≈ 配速 ' + round(speedKmhToPace(sp), 2) + ' min/km → MET = ' + round(runningMET(sp), 2)
         : '請輸入速度或配速。';
+      // 速度低於 ACSM 方程式適用下限時提出警示（不阻擋儲存）
+      const chk = runningSpeedCheck(sp);
+      const warn = $('runSpeedWarn');
+      warn.classList.toggle('hidden', !chk);
+      if (chk) {
+        warn.innerHTML = '<strong>此速度低於跑步公式的適用範圍（' + chk.minSpeedKmh + ' km/hr，約 ' +
+          round(chk.minPaceMinPerKm, 2) + ' min/km）</strong><br>' +
+          '若你實際上是<strong>走</strong>的，請改選「快走」項目——套用跑步公式會高估 MET。' +
+          '若確實是慢跑，此公式仍可使用，但準確度下降。' +
+          '<button type="button" class="btn secondary small" id="btnUseWalk" style="margin-top:8px">改用快走項目</button>';
+        const bw = $('btnUseWalk');
+        if (bw) bw.addEventListener('click', function () {
+          // 依速度挑選較接近的快走項目
+          $('fActivity').value = sp >= 6.0 ? 'walk64' : 'walk56';
+          $('fSpeed').value = ''; $('fPace').value = '';
+          updatePreview();
+          toast('已改用快走項目');
+        });
+      }
     }
     if (a && a.kind === 'swim') {
       const total = CONFIG.swimStrokes.reduce(function (s, x) { return s + (swimPct[x.code] || 0); }, 0);

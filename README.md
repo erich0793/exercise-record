@@ -104,7 +104,7 @@ App 內建的說明頁，可由「新增紀錄」各欄位旁的 **?** 按鈕直
 - 心率模組（選用，**預設摺疊**）：Tanaka HRmax、水中修正、Karvonen 目標心率
 - 自訂活動項目管理（名稱 + MET 值，存入 localStorage）
 - 資料匯出（JSON / CSV）、匯入（JSON）、清除
-- 驗收測試（TC-1 ~ TC-9）一鍵執行
+- 驗收測試（TC-1 ~ TC-10）一鍵執行
 - 來源、GRADE 說明與免責聲明固定區塊
 
 ---
@@ -177,6 +177,14 @@ function runningMET(speedKmh) {
   return vo2 / 3.5;
 }
 // runningMET(9) → 9.57
+```
+
+**適用範圍檢查**：此方程式適用於約 **8 km/hr 以上**的真實跑步。速度低於此值時，App 會在即時預覽處顯示警示並提供「改用快走項目」一鍵切換，但**不阻擋儲存**——真正的慢跑仍可套用此公式，只是準確度下降；若實際上是步行則會高估（例：5 km/hr 套跑步公式得 MET 5.76，而快走 5.6 km/hr 查表值僅 4.3，高估約 34%）。
+
+```javascript
+runningSpeedCheck(9)    // → null（適用）
+runningSpeedCheck(8.0)  // → null（邊界含 8.0）
+runningSpeedCheck(7.9)  // → { belowRange: true, minSpeedKmh: 8.0, minPaceMinPerKm: 7.5 }
 ```
 
 ### 3.8 游泳混合泳姿加權
@@ -262,6 +270,7 @@ const targetHR  = hrRest + intensityPercent * (hrMax - hrRest);   // Karvonen
 | `aerobic` | `memBasic` / `memAdditional` / `vigBasic` / `vigAdditional` 與 GRADE 字串 | WHO / PAG 改版 |
 | `metMinutesBand` | MET-min 參考帶 `low` / `high` | 參考帶依據更新 |
 | `strength` | `minDays`、`muscleGroups`（7 組，含 id / 中文 / 英文）、GRADE 字串 | 肌群定義或天數建議調整 |
+| `running` | `minValidSpeedKmh`（ACSM 跑步方程式適用下限，現為 8.0） | ACSM 指引改版 |
 | `hr` | Tanaka 係數、水中修正預設值與可調範圍 | 新證據出現時 |
 | `subjective` | talk test / RPE 對應之預設 MET 與區間 | 校正建議更新 |
 | `swimStrokes` | 12 筆游泳 Compendium 項目（code / MET / 中英文描述） | Compendium 改版 |
@@ -363,7 +372,7 @@ mem, metMin, kcal, isStrength, strengthModerate, muscles, note
 - **App 內**：開啟 `index.html` → 設定 → 「執行自我測試」，結果以表格呈現
 - **Node**：抽出 `CORE` 區塊後呼叫 `runSelfTests()`（無需任何相依套件）
 
-**執行結果：9 / 9 通過**（於 Node 22 與 Chromium 兩種環境執行，結果一致）
+**執行結果：10 / 10 通過**（於 Node 22 與 Chromium 兩種環境執行，結果一致）
 
 | 案例 | 說明 | 期望值 | 實際執行結果 | 判定 |
 |---|---|---|---|---|
@@ -376,6 +385,7 @@ mem, metMin, kcal, isStrength, strengthModerate, muscles, note
 | **TC-7** | MEM 閾值邊界 | 149 → 未達標；150 → 基本達標；300 → 基本達標；301 → 額外效益 | **未達標 / 基本達標 / 基本達標 / 額外效益** | ✅ PASS |
 | **TC-8** | 肌群覆蓋（週一腿髖背、週四胸肩臂） | 天數達標（2 天）但腹部未覆蓋 → 肌力未達標，UI 標示缺漏肌群 | 天數 = **2**（達標）、缺漏肌群 = **腹部** → 肌力**未達標**；儀表板 7 格覆蓋圖中腹部呈灰階，並顯示「缺漏肌群：腹部（訓練天數已達標）」 | ✅ PASS |
 | **TC-9** | 短時長活動（快走 6.4 km/hr，MET 5.0，7 分鐘） | 正常計入，MEM 貢獻 = 7（不得因 <10 分鐘而排除） | MEM 貢獻 = **7**（moderate，MET-min = 35） | ✅ PASS |
+| **TC-10** | 跑步速度適用範圍（ACSM 方程式下限 8 km/hr） | 9 → 適用；8.0 → 適用（邊界含）；7.9 → 警示；5 → 警示 | 9 → **適用**；8.0 → **適用**；7.9 → **警示**；5 → **警示**（5 km/hr 誤用跑步公式得 MET **5.76**，高於快走 5.6 km/hr 查表值 4.3） | ✅ PASS |
 
 ### 補充驗證（Chromium 端對端）
 
