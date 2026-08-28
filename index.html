@@ -173,9 +173,48 @@ details.note p{margin:8px 0 0;color:var(--text-muted);line-height:1.7}
 .preview div{background:var(--surface-2);border-radius:6px;padding:8px;text-align:center}
 .preview span{display:block;font-size:11px;color:var(--text-faint)}
 .preview b{font-size:18px;font-variant-numeric:tabular-nums}
+/* 達標軌跡 */
+.streakstats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:18px}
+.streakstats>div{background:var(--surface-2);border-radius:6px;padding:10px 6px;text-align:center}
+.streakstats span{display:block;font-size:11px;color:var(--text-faint);line-height:1.4}
+.streakstats b{display:block;font-size:24px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.35}
+.streakstats b small{font-size:13px;font-weight:400;color:var(--text-muted)}
+.streakstats em{display:block;font-style:normal;font-size:10.5px;color:var(--text-faint);line-height:1.4}
+.wtrack{display:flex;gap:8px;align-items:flex-start}
+.wtrack-labels{display:flex;flex-direction:column;flex:none}
+.wtrack-labels span{font-size:10.5px;color:var(--text-faint);white-space:nowrap;text-align:right}
+.wtrack-labels span.r1,.wtrack-labels span.r2{height:24px;line-height:24px}
+.wtrack-labels span.r3{height:14px;line-height:14px}
+.wtrack-cols{display:flex;gap:3px;flex:1;min-width:0;overflow-x:auto;padding-bottom:2px}
+.wcol{
+  flex:1 1 0;min-width:18px;background:none;border:none;padding:0;cursor:pointer;
+  display:flex;flex-direction:column;border-radius:4px;
+}
+.wcol:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wcol i{display:block}
+.wcol i.c{height:22px;margin-bottom:2px;border-radius:3px;background:var(--track)}
+.wcol i.c.met{background:var(--accent)}
+.wcol i.c.empty{background:none;border:1px dashed var(--border-strong);opacity:.55}
+.wcol i.dot{height:8px;width:8px;border-radius:50%;margin:3px auto 3px}
+.wcol i.dot.green{background:var(--green)}
+.wcol i.dot.yellow{background:var(--yellow)}
+.wcol i.dot.red{background:var(--red)}
+.wcol i.dot.none{background:none;border:1px solid var(--border-strong);opacity:.5}
+.wcol .wl{font-size:9.5px;color:var(--text-faint);text-align:center;line-height:14px;white-space:nowrap}
+.wcol.now .wl{color:var(--accent);font-weight:600}
+.wcol.now i.c{box-shadow:0 0 0 1.5px var(--accent)}
+.wcol:hover i.c{filter:brightness(1.08)}
+.tracklegend{display:flex;flex-wrap:wrap;gap:12px;font-size:11px;color:var(--text-faint);margin-top:12px}
+.tracklegend span{display:inline-flex;align-items:center;gap:5px}
+.tracklegend i{width:11px;height:11px;border-radius:3px;display:inline-block;background:var(--track)}
+.tracklegend i.met{background:var(--accent)}
+.tracklegend i.empty{background:none;border:1px dashed var(--border-strong)}
 /* 歷史 */
-.weekhead{display:flex;justify-content:space-between;align-items:baseline;margin:18px 0 6px;padding-bottom:4px;border-bottom:1px solid var(--border)}
-.weekhead b{font-size:14px}
+.weekhead{margin:20px 0 6px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.weekhead .wh-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.weekhead b{font-size:14px;font-variant-numeric:tabular-nums}
+.weekhead .wh-pills{display:flex;gap:6px;flex-wrap:wrap;margin-top:5px;align-items:center}
+.weekhead .wh-num{font-size:11.5px;color:var(--text-faint);font-variant-numeric:tabular-nums;margin-left:auto}
 .rec{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px dashed var(--border)}
 .rec:last-child{border-bottom:none}
 .rec .l{min-width:0}
@@ -511,6 +550,25 @@ svg.chart{width:100%;height:auto;display:block}
 
   <!-- ③ 歷史紀錄 -->
   <section class="tabpanel" id="tab-hist" role="tabpanel">
+    <div class="card">
+      <h2>達標軌跡（近 12 週）</h2>
+      <div class="streakstats" id="streakStats"></div>
+      <div class="wtrack">
+        <div class="wtrack-labels">
+          <span class="r1">有氧</span>
+          <span class="r2">肌力</span>
+          <span class="r3">綜合</span>
+          <span class="r3"></span>
+        </div>
+        <div class="wtrack-cols" id="wtrackCols"></div>
+      </div>
+      <div class="tracklegend">
+        <span><i class="met"></i>達標</span>
+        <span><i></i>未達標</span>
+        <span><i class="empty"></i>無紀錄</span>
+        <span>點選任一週可跳至該週儀表板</span>
+      </div>
+    </div>
     <div class="card">
       <h2>週趨勢（近 12 週）</h2>
       <div id="chartHost"></div>
@@ -1024,7 +1082,7 @@ const CONFIG = {
   /** 8. 熱量估算誤差 */
   kcal: { errorPct: '±15–20%', type: 'gross（總消耗）' },
 
-  /** 6. 心率模組 */
+/** 6. 心率模組 */
   hr: {
     tanakaBase: 208,          // HRmax = 208 − 0.7 × age（Tanaka 2001）
     tanakaSlope: 0.7,
@@ -1231,6 +1289,54 @@ function summarizeWeek(records, weightKg) {
   };
 }
 
+/**
+ * 產生連續 N 週的達標序列（由最舊到最新）。
+ * endWeekStartStr 為最後一週的週起始日；weeks 為週數。
+ */
+function weeklySeries(records, weekStartDay, endWeekStartStr, weeks, weightKg) {
+  const out = [];
+  for (let i = weeks - 1; i >= 0; i--) {
+    const ws = addDays(endWeekStartStr, -7 * i);
+    const recs = records.filter(function (r) {
+      return weekStartOf(r.date, weekStartDay) === ws;
+    });
+    out.push({ ws: ws, count: recs.length, summary: summarizeWeek(recs, weightKg) });
+  }
+  return out;
+}
+
+/**
+ * 由週序列計算達標統計。
+ * inProgressWs 為「進行中」的當週——該週尚未結束，不納入連續計算，
+ * 否則週一打開 App 時連續數會被尚未完成的一週歸零。
+ */
+function attainmentStats(series, inProgressWs) {
+  let both = 0, aer = 0, str = 0;
+  series.forEach(function (w) {
+    const a = w.summary.aerobic.met, m = w.summary.strength.met;
+    if (a) aer++;
+    if (m) str++;
+    if (a && m) both++;
+  });
+  // 目前連續：自最新的「已結束」週往回數
+  let i = series.length - 1;
+  if (inProgressWs && series[i] && series[i].ws === inProgressWs) i--;
+  let current = 0;
+  for (; i >= 0; i--) {
+    const w = series[i];
+    if (w.summary.aerobic.met && w.summary.strength.met) current++;
+    else break;
+  }
+  // 最長連續（含進行中週，因其若已達標即為事實）
+  let longest = 0, run = 0;
+  series.forEach(function (w) {
+    if (w.summary.aerobic.met && w.summary.strength.met) { run++; if (run > longest) longest = run; }
+    else run = 0;
+  });
+  return { weeks: series.length, both: both, aerobic: aer, strength: str,
+           currentStreak: current, longestStreak: longest };
+}
+
 /** 6. 心率模組 */
 function hrMaxTanaka(age) { return CONFIG.hr.tanakaBase - CONFIG.hr.tanakaSlope * age; }
 function hrMaxSwim(age, offset) {
@@ -1352,6 +1458,35 @@ function runSelfTests() {
       actual: '天數=' + s.days + '（' + (s.daysOk ? '達標' : '未達標') + '）、缺漏肌群=' + (missingZh || '無') + ' → 肌力' + (s.met ? '達標' : '未達標'),
       pass: s.days === 2 && s.daysOk === true && s.groupsOk === false && s.met === false &&
             s.missing.length === 1 && s.missing[0].id === 'abdomen' });
+  })();
+
+  // TC-11：達標軌跡統計（連續週數須排除進行中的當週）
+  (function () {
+    const runMet = runningMET(9);          // vigorous，20 分 → MEM 40
+    const full = function (date) {         // 一週雙軌達標所需之紀錄
+      return [
+        rec({ date: date, met: runMet, minutes: 40 }),                                    // MEM 80
+        rec({ date: date, met: runMet, minutes: 40 }),                                    // MEM 80 → 合計 160
+        rec({ date: date, met: 3.5, minutes: 45, isStrength: true,
+              muscles: ['legs', 'hips', 'back', 'abdomen'] }),
+        rec({ date: addDays(date, 2), met: 3.5, minutes: 45, isStrength: true,
+              muscles: ['chest', 'shoulders', 'arms'] })
+      ];
+    };
+    // 三週皆達標，最後一週為「進行中」且尚無紀錄
+    let recs = [];
+    ['2026-08-03', '2026-08-10', '2026-08-17'].forEach(function (d) {
+      recs = recs.concat(full(d));
+    });
+    const series = weeklySeries(recs, 1, '2026-08-24', 4, 70);
+    const st = attainmentStats(series, '2026-08-24');
+    const stNoSkip = attainmentStats(series, null);
+    T.push({ id: 'TC-11', name: '達標軌跡統計（進行中當週不計入連續）',
+      expected: '4 週序列 / 雙軌達標 3 週 / 目前連續 3（排除進行中當週）/ 最長連續 3；若不排除則連續為 0',
+      actual: series.length + ' 週 / 雙軌達標 ' + st.both + ' 週 / 目前連續 ' + st.currentStreak +
+              ' / 最長連續 ' + st.longestStreak + '；不排除時連續 = ' + stNoSkip.currentStreak,
+      pass: series.length === 4 && st.both === 3 && st.currentStreak === 3 &&
+            st.longestStreak === 3 && stNoSkip.currentStreak === 0 });
   })();
 
   // TC-10：跑步速度適用範圍檢查（邊界含 8.0）
@@ -1889,15 +2024,66 @@ function runSelfTests() {
     return Object.keys(map).sort().reverse().map(function (ws) { return { ws: ws, recs: map[ws] }; });
   }
 
+  /** 週區間的精簡顯示：2026-08-24 ~ 08-30 */
+  function weekRangeLabel(ws) { return ws + ' ~ ' + addDays(ws, 6).slice(5); }
+
+  /** 達標軌跡：連續 12 週的有氧／肌力／綜合狀態 */
+  function renderTrack() {
+    const thisWeek = weekStartOf(fmtDate(new Date()), settings.weekStart);
+    const series = weeklySeries(records, settings.weekStart, thisWeek, 12, settings.weightKg);
+    const st = attainmentStats(series, thisWeek);
+
+    $('streakStats').innerHTML =
+      '<div><span>目前連續</span><b>' + st.currentStreak + '<small> 週</small></b><em>雙軌達標</em></div>' +
+      '<div><span>近 12 週</span><b>' + st.both + '<small> / 12</small></b><em>雙軌達標</em></div>' +
+      '<div><span>最長連續</span><b>' + st.longestStreak + '<small> 週</small></b><em>雙軌達標</em></div>';
+
+    const lastIdx = series.length - 1;
+    $('wtrackCols').innerHTML = series.map(function (w, idx) {
+      // 標籤每 3 週標示一次（自本週往回錨定），避免窄螢幕下文字重疊
+      const showLabel = (lastIdx - idx) % 3 === 0;
+      const a = w.summary.aerobic.met, m = w.summary.strength.met;
+      const none = w.count === 0;
+      const isNow = w.ws === thisWeek;
+      const sig = none ? 'none' : w.summary.signal.color;
+      const title = weekRangeLabel(w.ws) + '｜' +
+        (none ? '無紀錄' : 'MEM ' + round(w.summary.mem, 0) + '、肌力 ' + w.summary.strength.days + ' 天') +
+        '｜有氧' + (a ? '達標' : '未達標') + '、肌力' + (m ? '達標' : '未達標') +
+        (isNow ? '（本週進行中）' : '');
+      return '<button class="wcol' + (isNow ? ' now' : '') + '" data-ws="' + w.ws + '" title="' + esc(title) + '">' +
+        '<i class="c' + (a ? ' met' : (none ? ' empty' : '')) + '"></i>' +
+        '<i class="c' + (m ? ' met' : (none ? ' empty' : '')) + '"></i>' +
+        '<i class="dot ' + sig + '"></i>' +
+        '<span class="wl">' + (showLabel ? w.ws.slice(5).replace('-', '/') : '') + '</span></button>';
+    }).join('');
+
+    $('wtrackCols').querySelectorAll('.wcol').forEach(function (b) {
+      b.addEventListener('click', function () {
+        viewWeekStart = b.dataset.ws;
+        renderDash();
+        switchTab('dash');
+      });
+    });
+  }
+
   function renderHistory() {
     const weeks = weeksOf(records);
+    const thisWeek = weekStartOf(fmtDate(new Date()), settings.weekStart);
     $('histList').innerHTML = weeks.length ? weeks.map(function (w) {
       const s = summarizeWeek(w.recs, settings.weightKg);
-      return '<div class="weekhead"><b>' + w.ws + ' ~ ' + addDays(w.ws, 6) + '</b>' +
-        '<span class="muted">' + s.signal.dot + ' MEM ' + round(s.mem, 0) + ' · ' + round(s.metMin, 0) + ' MET-min · 肌力 ' + s.strength.days + ' 天</span></div>' +
+      const pill = function (label, ok) {
+        return '<span class="tag' + (ok ? ' on' : '') + '">' + label + (ok ? ' 達標' : ' 未達標') + '</span>';
+      };
+      return '<div class="weekhead">' +
+        '<div class="wh-top">' + s.signal.dot + ' <b>' + weekRangeLabel(w.ws) + '</b>' +
+        (w.ws === thisWeek ? '<span class="tag on">本週</span>' : '') + '</div>' +
+        '<div class="wh-pills">' + pill('有氧', s.aerobic.met) + pill('肌力', s.strength.met) +
+        '<span class="wh-num">MEM ' + round(s.mem, 0) + ' · ' + round(s.metMin, 0) + ' MET-min · 肌力 ' + s.strength.days + ' 天</span>' +
+        '</div></div>' +
         w.recs.slice().sort(function (a, b) { return a.date < b.date ? -1 : 1; }).map(recRow).join('');
     }).join('') : '<p class="muted">尚無紀錄。</p>';
     bindRecButtons($('histList'));
+    renderTrack();
     renderChart(weeks);
   }
 
