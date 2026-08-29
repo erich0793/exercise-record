@@ -182,6 +182,21 @@ details.note p{margin:8px 0 0;color:var(--text-muted);line-height:1.7}
 .derived b{font-variant-numeric:tabular-nums}
 .photoflag{background:none;border:none;padding:0 2px;cursor:pointer;font-size:12px;color:var(--accent)}
 .overlay img.full{width:100%;max-height:78vh;object-fit:contain;border-radius:6px;background:var(--track)}
+/* OCR 辨識介面 */
+.ocrwrap{position:relative;touch-action:none;user-select:none;-webkit-user-select:none;margin:10px 0;background:var(--track);border-radius:6px;overflow:hidden}
+.ocrwrap img{display:block;width:100%;pointer-events:none}
+.ocrsel{position:absolute;border:2px solid var(--accent);background:rgba(47,111,94,.18);pointer-events:none}
+.ocrsteps{display:flex;gap:6px;margin-bottom:8px}
+.ocrsteps button{
+  flex:1;border:1px solid var(--border-strong);background:var(--surface-2);color:var(--text);
+  border-radius:6px;padding:8px 6px;font-size:13px;cursor:pointer;
+}
+.ocrsteps button.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:600}
+.ocrresult{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;margin-top:10px}
+.ocrresult label{margin:0;font-size:12px;white-space:nowrap}
+.ocrresult input{font-size:16px;font-variant-numeric:tabular-nums}
+.ocrresult .vote{font-size:11px;color:var(--text-faint);white-space:nowrap}
+.ocrprog{font-size:12px;color:var(--text-muted);margin:8px 0 0;min-height:18px}
 /* 達標軌跡 */
 .streakstats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:18px}
 .streakstats>div{background:var(--surface-2);border-radius:6px;padding:10px 6px;text-align:center}
@@ -445,6 +460,7 @@ svg.chart{width:100%;height:auto;display:block}
           <label>跑步機讀數（選填）<button type="button" class="helpbtn" data-help="h-opt-treadmill" aria-label="跑步機讀數說明">?</button></label>
           <div class="btnrow">
             <button type="button" class="btn secondary small" id="btnPhoto">📷 拍照／選擇照片</button>
+            <button type="button" class="btn secondary small hidden" id="btnOcr">🔍 自動辨識數字</button>
             <button type="button" class="btn secondary small hidden" id="btnPhotoClear">移除照片</button>
           </div>
           <input type="file" id="filePhoto" accept="image/*" class="hidden">
@@ -824,7 +840,15 @@ svg.chart{width:100%;height:auto;display:block}
         <li>換算採<strong>全程平均速度</strong>：距離 ÷ 時間。若你的課表包含大量走路休息或間歇衝刺，平均速度會低估或高估實際強度，此時建議改用主觀強度覆寫</li>
         <li>填完後速度、配速與時長三欄會自動帶入，仍可手動微調</li>
       </ul>
-      <p><strong>為什麼不做自動辨識</strong>：照片辨識（OCR）需要額外下載十餘 MB 的模型並連網，違反本工具「單檔、離線、不呼叫外部 API」的設計；且跑步機螢幕常有反光、傾斜與文字疊在背景圖上的情形，辨識錯誤會<strong>靜默寫入錯誤數值</strong>，比手動輸入更危險。兩個數字用手填只需幾秒，且不會出錯。</p>
+      <p><strong>自動辨識（OCR）</strong>：加入照片後會出現「🔍 自動辨識數字」。使用方式是<strong>先選欄位（距離／時間），再框住照片上對應的數字</strong>，然後按「辨識選取範圍」。</p>
+      <ul>
+        <li><strong>一定要框選</strong>：整張照片直接辨識幾乎必然失敗（實測信心度僅 19–26，輸出為亂碼）。縮小到單一數字後才可靠。框得越貼近數字越準。</li>
+        <li><strong>結果一律先顯示、不自動寫入</strong>：辨識值會填在可編輯欄位中，並標示「幾次辨識中有幾次得到同一結果」。按下「套用到表單」才會進入紀錄。</li>
+        <li><strong>票數低會以紅字警示</strong>：例如「僅 1/8 次辨識出 17:12」代表 8 回合中只有 1 回合讀出此值，此時<strong>務必自行核對照片</strong>。</li>
+        <li><strong>首次使用需下載約 9 MB 辨識模型</strong>（自本站託管，非第三方服務），之後由瀏覽器快取。若無網路或載入失敗，會顯示提示，此時手動輸入即可，其餘功能不受影響。</li>
+      </ul>
+      <p>辨識採多組二值化門檻與版面模式共 8 個回合，再以<strong>投票</strong>選出最一致的結果；單一回合的輸出不足以採信。即便如此，跑步機螢幕的反光、傾斜與文字疊在背景圖上仍可能造成誤判，<strong>照片與數字不符時請以照片為準</strong>。</p>
+      <p class="src"><code>[實作約定]</code> 辨識引擎為 Tesseract（開源），資源自行託管於本站 <code>vendor/ocr</code>，不呼叫任何外部 API，照片不會離開你的裝置。</p>
       <p class="src"><code>[實作約定]</code> 平均速度換算為單純的算術，非實證結論；換算後的 MET 仍由 ACSM 方程式推得，其適用範圍與限制見上方說明。</p>
 
       <h4 id="h-opt-override">主觀強度覆寫（talk test / RPE）</h4>
@@ -1117,6 +1141,15 @@ const CONFIG = {
     ]
   },
 
+  /** 跑步機數字辨識（OCR）。資源自行託管於 vendor/ocr，僅在使用者按下辨識時才載入 */
+  ocr: {
+    basePath: 'vendor/ocr',
+    // 多組二值化門檻 × 版面模式，取結果投票，單一參數不可靠
+    thresholds: [200, 210, 215, 225],
+    psmModes: ['7', '8'],
+    upscale: 2
+  },
+
   /** 跑步機讀數照片：存入前先縮圖，避免佔滿 localStorage 配額 */
   photo: {
     maxDimPx: 1200,
@@ -1203,6 +1236,57 @@ function runningMET(speedKmh) {
 function paceToSpeedKmh(minPerKm) { return minPerKm > 0 ? 60 / minPerKm : 0; }
 /** 速度（km/hr）→ 配速（min/km） */
 function speedKmhToPace(speedKmh) { return speedKmh > 0 ? 60 / speedKmh : 0; }
+
+/** 正規化 OCR 文字：去除空白、全形符號與常見誤判 */
+function normalizeOcrText(t) {
+  return String(t == null ? '' : t)
+    .replace(/\s+/g, '')
+    .replace(/[，,]/g, '.')
+    .replace(/[；;]/g, ':')
+    .replace(/[^0-9:.]/g, '');
+}
+
+/** 判斷候選值是否符合欄位格式 */
+function isValidOcrValue(v, kind) {
+  if (!v) return false;
+  if (kind === 'distance') {
+    if (!/^\d{1,3}(\.\d{1,2})?$/.test(v)) return false;
+    const n = Number(v);
+    return n > 0 && n < 200;                       // 合理的距離範圍（km）
+  }
+  if (kind === 'time') {
+    if (!/^\d{1,3}:[0-5]\d$/.test(v) && !/^\d{1,2}:[0-5]\d:[0-5]\d$/.test(v)) return false;
+    return parseDurationToMinutes(v) > 0;
+  }
+  return false;
+}
+
+/**
+ * 由多組 OCR 結果投票選出最可信的候選值。
+ * results: [{ text, confidence }]。回傳 null 表示沒有任何合格候選。
+ * 採「出現次數優先、信心度次之」，單一次結果不足以採信。
+ */
+function pickOcrCandidate(results, kind) {
+  const tally = {};
+  (results || []).forEach(function (r) {
+    const v = normalizeOcrText(r && r.text);
+    if (!isValidOcrValue(v, kind)) return;
+    if (!tally[v]) tally[v] = { value: v, votes: 0, confSum: 0 };
+    tally[v].votes++;
+    tally[v].confSum += Number(r.confidence) || 0;
+  });
+  const list = Object.keys(tally).map(function (k) {
+    const t = tally[k];
+    return { value: t.value, votes: t.votes, confidence: t.confSum / t.votes };
+  });
+  if (!list.length) return null;
+  list.sort(function (a, b) {
+    return b.votes - a.votes || b.confidence - a.confidence;
+  });
+  return { value: list[0].value, votes: list[0].votes,
+           total: (results || []).length, confidence: list[0].confidence,
+           alternatives: list.slice(1, 3).map(function (x) { return x.value; }) };
+}
 
 /**
  * 解析時間字串為分鐘數。支援跑步機常見的 mm:ss 與 h:mm:ss，
@@ -1534,6 +1618,30 @@ function runSelfTests() {
       actual: '天數=' + s.days + '（' + (s.daysOk ? '達標' : '未達標') + '）、缺漏肌群=' + (missingZh || '無') + ' → 肌力' + (s.met ? '達標' : '未達標'),
       pass: s.days === 2 && s.daysOk === true && s.groupsOk === false && s.met === false &&
             s.missing.length === 1 && s.missing[0].id === 'abdomen' });
+  })();
+
+  // TC-13：OCR 候選值投票（以實際跑步機照片的辨識輸出為樣本）
+  (function () {
+    // 下列文字為本專案於實機照片上實測所得的 OCR 輸出
+    const distOut = [{ text: '2.8', confidence: 60 }, { text: '2.8', confidence: 55 },
+                     { text: '42:8', confidence: 20 }, { text: '2.', confidence: 30 },
+                     { text: '', confidence: 0 }];
+    const timeOut = [{ text: '17:12', confidence: 39 }, { text: '17:12', confidence: 26 },
+                     { text: ':12', confidence: 10 }, { text: '17', confidence: 43 }];
+    const d = pickOcrCandidate(distOut, 'distance');
+    const t = pickOcrCandidate(timeOut, 'time');
+    const junk = pickOcrCandidate([{ text: '::..', confidence: 5 }, { text: '', confidence: 0 }], 'distance');
+    // 格式驗證：距離不可為時間格式、時間不可超出分秒範圍
+    const guards = !isValidOcrValue('17:12', 'distance') && !isValidOcrValue('2.8', 'time') &&
+                   !isValidOcrValue('17:75', 'time') && isValidOcrValue('1:07:30', 'time') &&
+                   normalizeOcrText(' 2,8 km ') === '2.8';
+    T.push({ id: 'TC-13', name: 'OCR 候選值投票與格式把關',
+      expected: '距離 → 2.8（2 票）；時間 → 17:12（2 票）；全為雜訊 → null；跨格式與非法值一律拒絕',
+      actual: '距離 → ' + (d && d.value) + '（' + (d && d.votes) + '/' + (d && d.total) + ' 票）；時間 → ' +
+              (t && t.value) + '（' + (t && t.votes) + '/' + (t && t.total) + ' 票）；雜訊 → ' +
+              (junk === null ? 'null' : junk.value) + '；把關 ' + (guards ? '通過' : '失敗'),
+      pass: d && d.value === '2.8' && d.votes === 2 && t && t.value === '17:12' && t.votes === 2 &&
+            junk === null && guards });
   })();
 
   // TC-12：跑步機讀數換算（以實際跑步機畫面為例：2.8 km / 17:12）
@@ -1921,6 +2029,7 @@ function runSelfTests() {
     pendingPhoto = dataUrl || null;
     $('photoPrev').classList.toggle('hidden', !pendingPhoto);
     $('btnPhotoClear').classList.toggle('hidden', !pendingPhoto);
+    $('btnOcr').classList.toggle('hidden', !pendingPhoto);
     if (pendingPhoto) $('photoImg').src = pendingPhoto;
   }
 
@@ -1936,12 +2045,256 @@ function runSelfTests() {
     document.body.appendChild(ov);
   }
 
+  /* ---------- OCR：框選跑步機數字並辨識 ---------- */
+  let ocrWorker = null, ocrLoading = null, ocrFullResUrl = null;
+
+  function loadScript(src) {
+    return new Promise(function (res, rej) {
+      const el = document.createElement('script');
+      el.src = src;
+      el.onload = function () { res(); };
+      el.onerror = function () { rej(new Error('無法載入 ' + src)); };
+      document.head.appendChild(el);
+    });
+  }
+
+  /** 為可能卡住的非同步流程加上逾時保護，避免使用者面對永遠轉不完的畫面 */
+  function withTimeout(promise, ms, message) {
+    let timer = null;
+    return Promise.race([
+      promise.then(function (v) { clearTimeout(timer); return v; },
+                   function (e) { clearTimeout(timer); throw e; }),
+      new Promise(function (_, rej) {
+        timer = setTimeout(function () { rej(new Error(message)); }, ms);
+      })
+    ]);
+  }
+
+  /** 僅在使用者主動辨識時才載入 OCR 資源，核心功能維持離線可用 */
+  function getOcrWorker(onProgress) {
+    if (ocrWorker) return Promise.resolve(ocrWorker);
+    if (ocrLoading) return ocrLoading;
+    // 以 file:// 直接開啟時，瀏覽器的同源限制會讓 worker 無法啟動，直接告知而非空等
+    if (location.protocol === 'file:') {
+      return Promise.reject(new Error(
+        '以檔案方式（file://）開啟時瀏覽器不允許啟動辨識程式。請改用網址開啟本頁，或手動輸入距離與時間'));
+    }
+    const base = CONFIG.ocr.basePath;
+    ocrLoading = Promise.resolve()
+      .then(function () {
+        if (typeof Tesseract === 'undefined') {
+          onProgress && onProgress('載入辨識程式…');
+          return loadScript(base + '/tesseract.min.js');
+        }
+      })
+      .then(function () {
+        onProgress && onProgress('載入辨識模型（首次約 9 MB，之後由瀏覽器快取）…');
+        return Tesseract.createWorker('eng', 1, {
+          workerPath: base + '/worker.min.js',
+          corePath: base + '/',
+          langPath: base,
+          gzip: false,
+          logger: function (m) {
+            if (m && m.status && onProgress) {
+              onProgress(m.status + (m.progress ? ' ' + Math.round(m.progress * 100) + '%' : ''));
+            }
+          }
+        });
+      })
+      .then(function (w) {
+        return w.setParameters({ tessedit_char_whitelist: '0123456789:.' }).then(function () {
+          ocrWorker = w;
+          return w;
+        });
+      })
+      .catch(function (e) { ocrLoading = null; throw e; });
+    ocrLoading = withTimeout(ocrLoading, 120000,
+      '辨識資源載入逾時（可能是網路過慢）。可稍後再試，或手動輸入距離與時間')
+      .catch(function (e) { ocrLoading = null; throw e; });
+    return ocrLoading;
+  }
+
+  /**
+   * 對影像的指定區域做多組二值化與版面模式的辨識，回傳投票結果。
+   * rect 以原圖像素座標表示。
+   */
+  function recognizeRegion(imgEl, rect, kind, onProgress) {
+    return getOcrWorker(onProgress).then(function (worker) {
+      const cv = document.createElement('canvas');
+      const sc = CONFIG.ocr.upscale;
+      cv.width = Math.max(8, Math.round(rect.w * sc));
+      cv.height = Math.max(8, Math.round(rect.h * sc));
+      const ctx = cv.getContext('2d', { willReadFrequently: true });
+      const results = [];
+      const total = CONFIG.ocr.thresholds.length * CONFIG.ocr.psmModes.length;
+      let done = 0;
+
+      const runOne = function (th, psm) {
+        ctx.clearRect(0, 0, cv.width, cv.height);
+        ctx.drawImage(imgEl, rect.x, rect.y, rect.w, rect.h, 0, 0, cv.width, cv.height);
+        const d = ctx.getImageData(0, 0, cv.width, cv.height);
+        const px = d.data;
+        for (let i = 0; i < px.length; i += 4) {
+          const g = 0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2];
+          const v = g >= th ? 0 : 255;         // 螢幕為亮字暗底，轉成黑字白底
+          px[i] = px[i + 1] = px[i + 2] = v; px[i + 3] = 255;
+        }
+        ctx.putImageData(d, 0, 0);
+        const url = cv.toDataURL('image/png');
+        return worker.setParameters({ tessedit_pageseg_mode: psm })
+          .then(function () { return worker.recognize(url); })
+          .then(function (r) {
+            results.push({ text: r.data.text, confidence: r.data.confidence });
+            done++;
+            onProgress && onProgress('辨識中… ' + done + ' / ' + total);
+          });
+      };
+
+      let chain = Promise.resolve();
+      CONFIG.ocr.thresholds.forEach(function (th) {
+        CONFIG.ocr.psmModes.forEach(function (psm) {
+          chain = chain.then(function () { return runOne(th, psm); });
+        });
+      });
+      return withTimeout(chain, 120000, '辨識逾時，請縮小選取範圍後再試')
+        .then(function () { return pickOcrCandidate(results, kind); });
+    });
+  }
+
+  /** 開啟辨識介面：框選 → 辨識 → 確認後才套用 */
+  function openOcrPanel() {
+    const src = ocrFullResUrl || pendingPhoto;
+    if (!src) { toast('請先加入照片'); return; }
+    let kind = 'distance';
+    const found = { distance: '', time: '' };
+
+    const ov = document.createElement('div');
+    ov.className = 'overlay';
+    ov.innerHTML =
+      '<div class="panel">' +
+      '<h3>自動辨識跑步機數字</h3>' +
+      '<p class="faint" style="margin:0 0 10px">先選欄位，再用手指或滑鼠<strong>框住照片上的數字</strong>。範圍越貼近數字越準；辨識結果會先顯示，確認無誤再套用。</p>' +
+      '<div class="ocrsteps">' +
+      '<button type="button" data-kind="distance" class="on">① 距離</button>' +
+      '<button type="button" data-kind="time">② 時間</button>' +
+      '</div>' +
+      '<div class="ocrwrap" id="ocrWrap"><img id="ocrImg" alt="跑步機照片"><div class="ocrsel hidden" id="ocrSel"></div></div>' +
+      '<button type="button" class="btn small" id="ocrRun" disabled>辨識選取範圍</button>' +
+      '<p class="ocrprog" id="ocrProg"></p>' +
+      '<div class="ocrresult">' +
+      '<label for="ocrDist">距離 km</label><input type="text" id="ocrDist" inputmode="decimal"><span class="vote" id="ocrDistVote"></span>' +
+      '<label for="ocrTime">時間</label><input type="text" id="ocrTime" inputmode="numeric"><span class="vote" id="ocrTimeVote"></span>' +
+      '</div>' +
+      '<div class="btnrow" style="margin-top:12px">' +
+      '<button type="button" class="btn small" id="ocrApply">套用到表單</button>' +
+      '<button type="button" class="btn secondary small" data-close>取消</button>' +
+      '</div></div>';
+    document.body.appendChild(ov);
+
+    const img = ov.querySelector('#ocrImg');
+    const wrap = ov.querySelector('#ocrWrap');
+    const sel = ov.querySelector('#ocrSel');
+    const runBtn = ov.querySelector('#ocrRun');
+    const prog = ov.querySelector('#ocrProg');
+    let rect = null, dragging = false, sx = 0, sy = 0;
+
+    img.src = src;
+    const close = function () { ov.remove(); };
+    ov.querySelector('[data-close]').addEventListener('click', close);
+    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+
+    ov.querySelectorAll('[data-kind]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        kind = b.dataset.kind;
+        ov.querySelectorAll('[data-kind]').forEach(function (x) { x.classList.toggle('on', x === b); });
+      });
+    });
+
+    const pos = function (e) {
+      const r = wrap.getBoundingClientRect();
+      return { x: Math.min(Math.max(e.clientX - r.left, 0), r.width),
+               y: Math.min(Math.max(e.clientY - r.top, 0), r.height) };
+    };
+    const paint = function () {
+      sel.classList.remove('hidden');
+      sel.style.left = rect.x + 'px'; sel.style.top = rect.y + 'px';
+      sel.style.width = rect.w + 'px'; sel.style.height = rect.h + 'px';
+      runBtn.disabled = !(rect.w > 8 && rect.h > 8);
+    };
+    wrap.addEventListener('pointerdown', function (e) {
+      const p = pos(e); dragging = true; sx = p.x; sy = p.y;
+      rect = { x: sx, y: sy, w: 0, h: 0 }; paint();
+      wrap.setPointerCapture(e.pointerId);
+    });
+    wrap.addEventListener('pointermove', function (e) {
+      if (!dragging) return;
+      const p = pos(e);
+      rect = { x: Math.min(sx, p.x), y: Math.min(sy, p.y),
+               w: Math.abs(p.x - sx), h: Math.abs(p.y - sy) };
+      paint();
+    });
+    wrap.addEventListener('pointerup', function () { dragging = false; });
+
+    runBtn.addEventListener('click', function () {
+      if (!rect) return;
+      const scale = img.naturalWidth / img.clientWidth;    // 顯示座標 → 原圖座標
+      const r = { x: rect.x * scale, y: rect.y * scale, w: rect.w * scale, h: rect.h * scale };
+      runBtn.disabled = true;
+      prog.textContent = '準備中…';
+      recognizeRegion(img, r, kind, function (m) { prog.textContent = m; })
+        .then(function (res) {
+          runBtn.disabled = false;
+          const isDist = kind === 'distance';
+          const field = ov.querySelector(isDist ? '#ocrDist' : '#ocrTime');
+          const vote = ov.querySelector(isDist ? '#ocrDistVote' : '#ocrTimeVote');
+          if (!res) {
+            prog.textContent = '這個範圍讀不出可用的數字，請框得更貼近數字再試一次，或直接手動輸入。';
+            vote.textContent = '';
+            return;
+          }
+          found[kind] = res.value;
+          field.value = res.value;
+          vote.textContent = res.votes + '/' + res.total + ' 票';
+          // 票數低代表多數辨識回合並未得到同一結果，必須明講而非默默採用
+          const weak = res.votes <= 1;
+          vote.style.color = weak ? 'var(--red)' : 'var(--text-faint)';
+          field.style.borderColor = weak ? 'var(--red)' : '';
+          prog.innerHTML = weak
+            ? '<strong style="color:var(--red)">僅 ' + res.votes + '/' + res.total +
+              ' 次辨識出「' + esc(res.value) + '」，可靠度低，請務必核對照片。</strong>' +
+              (res.alternatives.length ? '　其他候選：' + esc(res.alternatives.join('、')) : '')
+            : '辨識完成：' + esc(res.value) + '（' + res.votes + '/' + res.total + ' 次一致）' +
+              (res.alternatives.length ? '　其他候選：' + esc(res.alternatives.join('、')) : '') +
+              '　請確認是否與照片一致。';
+        })
+        .catch(function (e) {
+          runBtn.disabled = false;
+          prog.textContent = '辨識功能無法使用：' + (e && e.message ? e.message : '資源載入失敗') +
+            '。可直接手動輸入距離與時間。';
+        });
+    });
+
+    ov.querySelector('#ocrApply').addEventListener('click', function () {
+      const d = ov.querySelector('#ocrDist').value.trim();
+      const t = ov.querySelector('#ocrTime').value.trim();
+      if (!d && !t) { toast('尚未有可套用的數值'); return; }
+      if (d) $('fDist').value = d;
+      if (t) $('fTime').value = t;
+      applyTreadmill();
+      close();
+      toast('已套用辨識結果，請再核對一次');
+    });
+  }
+
+  $('btnOcr').addEventListener('click', openOcrPanel);
   $('btnPhoto').addEventListener('click', function () { $('filePhoto').click(); });
   $('btnPhotoClear').addEventListener('click', function () { setPhoto(null); $('filePhoto').value = ''; });
   $('photoImg').addEventListener('click', function () { if (pendingPhoto) showPhoto(pendingPhoto); });
   $('filePhoto').addEventListener('change', function (e) {
     const f = e.target.files && e.target.files[0];
     if (!f) return;
+    if (ocrFullResUrl) URL.revokeObjectURL(ocrFullResUrl);
+    ocrFullResUrl = URL.createObjectURL(f);   // 辨識用原圖，僅存於記憶體
     downscaleImage(f, CONFIG.photo.maxDimPx, CONFIG.photo.jpegQuality).then(function (d) {
       setPhoto(d);
       toast('已加入照片，請對照填入距離與時間');
