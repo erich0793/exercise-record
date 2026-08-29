@@ -173,6 +173,15 @@ details.note p{margin:8px 0 0;color:var(--text-muted);line-height:1.7}
 .preview div{background:var(--surface-2);border-radius:6px;padding:8px;text-align:center}
 .preview span{display:block;font-size:11px;color:var(--text-faint)}
 .preview b{font-size:18px;font-variant-numeric:tabular-nums}
+/* 跑步機讀數面板 */
+.tmpanel{border:1px solid var(--border);border-radius:6px;padding:12px;margin:0 0 14px;background:var(--surface-2)}
+.tmpanel>label{font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px;display:block}
+.photoprev{position:relative;margin:10px 0}
+.photoprev img{width:100%;max-height:220px;object-fit:contain;border-radius:6px;background:var(--track);display:block;cursor:zoom-in}
+.derived{background:var(--accent-soft);border-radius:6px;padding:9px 10px;font-size:12.5px;color:var(--accent);line-height:1.7;margin:10px 0 0}
+.derived b{font-variant-numeric:tabular-nums}
+.photoflag{background:none;border:none;padding:0 2px;cursor:pointer;font-size:12px;color:var(--accent)}
+.overlay img.full{width:100%;max-height:78vh;object-fit:contain;border-radius:6px;background:var(--track)}
 /* 達標軌跡 */
 .streakstats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:18px}
 .streakstats>div{background:var(--surface-2);border-radius:6px;padding:10px 6px;text-align:center}
@@ -432,6 +441,30 @@ svg.chart{width:100%;height:auto;display:block}
           此方程式適用於<strong>約 8 km/hr 以上</strong>的真實跑步；更慢且實際上是走路時，請改用「快走」項目，否則會高估 MET。
           <button type="button" class="helpbtn" data-help="h-theory-2" aria-label="跑步公式說明">?</button>
         </div>
+        <div class="tmpanel">
+          <label>跑步機讀數（選填）<button type="button" class="helpbtn" data-help="h-opt-treadmill" aria-label="跑步機讀數說明">?</button></label>
+          <div class="btnrow">
+            <button type="button" class="btn secondary small" id="btnPhoto">📷 拍照／選擇照片</button>
+            <button type="button" class="btn secondary small hidden" id="btnPhotoClear">移除照片</button>
+          </div>
+          <input type="file" id="filePhoto" accept="image/*" class="hidden">
+          <div class="photoprev hidden" id="photoPrev"><img id="photoImg" alt="跑步機螢幕照片"></div>
+          <p class="faint" style="margin:8px 0 10px">
+            照片<strong>僅存在你的裝置</strong>，不會上傳。網頁不會自動辨識照片上的數字——請對照螢幕填入下方兩欄，即可自動換算速度與 MET。
+          </p>
+          <div class="grid2">
+            <div class="field" style="margin-bottom:0">
+              <label for="fDist">距離（km）</label>
+              <input type="number" id="fDist" min="0" step="0.01" inputmode="decimal" placeholder="例：2.8">
+            </div>
+            <div class="field" style="margin-bottom:0">
+              <label for="fTime">時間（mm:ss）</label>
+              <input type="text" id="fTime" inputmode="numeric" placeholder="例：17:12">
+            </div>
+          </div>
+          <p class="derived hidden" id="tmDerived"></p>
+        </div>
+
         <div class="grid2">
           <div class="field">
             <label for="fSpeed">速度（km/hr）</label>
@@ -783,6 +816,17 @@ svg.chart{width:100%;height:auto;display:block}
       <p>抱石這類「爬一下、休息一下」的間歇型活動，建議填<strong>實際在牆上的時間加上組間短休</strong>，也就是你認為自己「在運動」的總時間，不要把整場泡在館裡的時間都算進去。</p>
       <p class="src"><code>[指引慣例]</code> 出處：US Physical Activity Guidelines for Americans, 2nd ed. (2018)。</p>
 
+      <h4 id="h-opt-treadmill">跑步機讀數（照片與距離時間換算）</h4>
+      <p>選擇「跑步」時會出現此面板。你可以拍下或匯入跑步機螢幕的照片，<strong>照片只存在你的裝置上，不會上傳</strong>，存檔前會自動縮圖以免佔滿瀏覽器儲存空間。</p>
+      <p><strong>網頁不會自動辨識照片上的數字。</strong>照片的用途是讓你邊看邊填——請把螢幕上的<strong>距離</strong>與<strong>時間</strong>填入下方兩欄，系統會自動換算平均速度、配速、時長與 MET，不需要你自己算。</p>
+      <ul>
+        <li>時間可填 <code>mm:ss</code>（例 <code>17:12</code>）、<code>h:mm:ss</code>，或直接填分鐘數</li>
+        <li>換算採<strong>全程平均速度</strong>：距離 ÷ 時間。若你的課表包含大量走路休息或間歇衝刺，平均速度會低估或高估實際強度，此時建議改用主觀強度覆寫</li>
+        <li>填完後速度、配速與時長三欄會自動帶入，仍可手動微調</li>
+      </ul>
+      <p><strong>為什麼不做自動辨識</strong>：照片辨識（OCR）需要額外下載十餘 MB 的模型並連網，違反本工具「單檔、離線、不呼叫外部 API」的設計；且跑步機螢幕常有反光、傾斜與文字疊在背景圖上的情形，辨識錯誤會<strong>靜默寫入錯誤數值</strong>，比手動輸入更危險。兩個數字用手填只需幾秒，且不會出錯。</p>
+      <p class="src"><code>[實作約定]</code> 平均速度換算為單純的算術，非實證結論；換算後的 MET 仍由 ACSM 方程式推得，其適用範圍與限制見上方說明。</p>
+
       <h4 id="h-opt-override">主觀強度覆寫（talk test / RPE）</h4>
       <p>查表 MET 是<strong>族群平均值</strong>，不會因為你今天很拚或很混而改變。當查表值明顯不符實際感受時，用這個開關以主觀判定取代它。</p>
       <ul>
@@ -1073,6 +1117,12 @@ const CONFIG = {
     ]
   },
 
+  /** 跑步機讀數照片：存入前先縮圖，避免佔滿 localStorage 配額 */
+  photo: {
+    maxDimPx: 1200,
+    jpegQuality: 0.72
+  },
+
   /** 4.1 ACSM 跑步方程式之適用範圍 [公式推導] */
   running: {
     // 低於此速度時，若實際上是步行，其能量成本機制不同，套用跑步方程式會高估
@@ -1153,6 +1203,32 @@ function runningMET(speedKmh) {
 function paceToSpeedKmh(minPerKm) { return minPerKm > 0 ? 60 / minPerKm : 0; }
 /** 速度（km/hr）→ 配速（min/km） */
 function speedKmhToPace(speedKmh) { return speedKmh > 0 ? 60 / speedKmh : 0; }
+
+/**
+ * 解析時間字串為分鐘數。支援跑步機常見的 mm:ss 與 h:mm:ss，
+ * 以及純數字（視為分鐘，可含小數）。無法解析時回傳 null。
+ */
+function parseDurationToMinutes(str) {
+  if (str === null || str === undefined) return null;
+  const t = String(str).trim();
+  if (!t) return null;
+  if (t.indexOf(':') < 0) {
+    const n = Number(t);
+    return (isFinite(n) && n >= 0) ? n : null;
+  }
+  const parts = t.split(':');
+  const nums = parts.map(function (x) { return Number(x); });
+  if (nums.some(function (n) { return !isFinite(n) || n < 0; })) return null;
+  if (nums.length === 2) return nums[0] + nums[1] / 60;
+  if (nums.length === 3) return nums[0] * 60 + nums[1] + nums[2] / 60;
+  return null;
+}
+
+/** 由距離（km）與時間（分鐘）推算平均速度（km/hr） */
+function speedFromDistanceTime(distanceKm, minutes) {
+  if (!(distanceKm > 0) || !(minutes > 0)) return 0;
+  return distanceKm / (minutes / 60);
+}
 
 /**
  * 檢查跑步速度是否落在 ACSM 方程式的適用範圍。
@@ -1460,6 +1536,29 @@ function runSelfTests() {
             s.missing.length === 1 && s.missing[0].id === 'abdomen' });
   })();
 
+  // TC-12：跑步機讀數換算（以實際跑步機畫面為例：2.8 km / 17:12）
+  (function () {
+    const mins = parseDurationToMinutes('17:12');
+    const speed = speedFromDistanceTime(2.8, mins);
+    const met = runningMET(speed);
+    const mem = memContribution(met, mins);
+    const mm = metMinutes(met, mins);
+    const kcal70 = kcalOf(met, 70, mins);      // 對照跑步機顯示的 206 kcal
+    const fmtOk = parseDurationToMinutes('1:17:12') === 77.2 &&
+                  parseDurationToMinutes('30') === 30 &&
+                  parseDurationToMinutes('abc') === null &&
+                  parseDurationToMinutes('') === null;
+    T.push({ id: 'TC-12', name: '跑步機讀數換算（2.8 km / 17:12）',
+      expected: '時間 17.2 分、速度 9.77 km/hr、MET 10.30、Vigorous、MEM 34.4、MET-min 177.2；' +
+                '時間格式 mm:ss／h:mm:ss／純分鐘／無效字串皆正確處理',
+      actual: '時間 ' + round(mins, 2) + ' 分、速度 ' + round(speed, 2) + ' km/hr、MET ' + round(met, 2) +
+              '、' + classifyIntensity(met) + '、MEM ' + round(mem, 1) + '、MET-min ' + round(mm, 1) +
+              '（70 kg 估計 ' + round(kcal70, 0) + ' kcal，跑步機顯示 206 kcal）',
+      pass: round(mins, 2) === 17.2 && round(speed, 2) === 9.77 && round(met, 2) === 10.30 &&
+            classifyIntensity(met) === 'vigorous' && round(mem, 1) === 34.4 &&
+            round(mm, 1) === 177.2 && fmtOk });
+  })();
+
   // TC-11：達標軌跡統計（連續週數須排除進行中的當週）
   (function () {
     const runMet = runningMET(9);          // vigorous，20 分 → MEM 40
@@ -1563,8 +1662,15 @@ function runSelfTests() {
   }
   function lsSet(k, v) {
     memStore[k] = v;
-    if (!storageOk) return;
-    try { localStorage.setItem(k, v); } catch (e) { storageOk = false; }
+    if (!storageOk) return false;
+    try { localStorage.setItem(k, v); return true; }
+    catch (e) {
+      // 配額不足只代表這次寫不進去，不代表 localStorage 不可用
+      const quota = e && (e.name === 'QuotaExceededError' ||
+                          e.name === 'NS_ERROR_DOM_QUOTA_REACHED' || e.code === 22);
+      if (!quota) storageOk = false;
+      return false;
+    }
   }
 
   function load() {
@@ -1574,7 +1680,7 @@ function runSelfTests() {
       const c = lsGet(LS.cus); if (c) custom = JSON.parse(c) || [];
     } catch (e) { console.warn('讀取既有資料失敗', e); }
   }
-  function saveRecords() { lsSet(LS.rec, JSON.stringify(records)); }
+  function saveRecords() { return lsSet(LS.rec, JSON.stringify(records)); }
   function saveSettings() { lsSet(LS.set, JSON.stringify(settings)); }
   function saveCustom() { lsSet(LS.cus, JSON.stringify(custom)); }
 
@@ -1714,6 +1820,7 @@ function runSelfTests() {
       (r.note ? ' · ' + esc(r.note) : '') + '</span></div>' +
       '<div class="r"><div class="v">MEM ' + round(memContribution(r.met, r.minutes), 1) + '</div>' +
       '<div class="v faint">' + round(metMinutes(r.met, r.minutes), 0) + ' MET-min</div>' +
+      (r.meta && r.meta.photo ? '<button class="photoflag" data-act="photo" title="檢視照片">📷 照片</button>' : '') +
       '<button class="linkbtn" data-act="edit">編輯</button><button class="linkbtn" data-act="del">刪除</button></div></div>';
   }
 
@@ -1721,7 +1828,10 @@ function runSelfTests() {
     host.querySelectorAll('button[data-act]').forEach(function (b) {
       b.addEventListener('click', function () {
         const id = b.closest('.rec').dataset.id;
-        if (b.dataset.act === 'del') {
+        if (b.dataset.act === 'photo') {
+          const r = records.filter(function (x) { return x.id === id; })[0];
+          if (r && r.meta && r.meta.photo) showPhoto(r.meta.photo);
+        } else if (b.dataset.act === 'del') {
           if (confirm('確定刪除此筆紀錄？')) {
             records = records.filter(function (r) { return r.id !== id; });
             saveRecords(); renderDash(); renderHistory(); toast('已刪除');
@@ -1781,6 +1891,90 @@ function runSelfTests() {
   }
 
   function currentActivity() { return findActivity($('fActivity').value); }
+
+  /* ---------- 跑步機讀數：照片與距離時間換算 ---------- */
+  let pendingPhoto = null;   // 目前表單上的照片（dataURL）
+
+  /** 縮圖後轉為 dataURL，避免整張原圖佔滿 localStorage 配額 */
+  function downscaleImage(file, maxDim, quality) {
+    return new Promise(function (resolve, reject) {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = function () {
+        try {
+          const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+          const w = Math.max(1, Math.round(img.width * scale));
+          const h = Math.max(1, Math.round(img.height * scale));
+          const cv = document.createElement('canvas');
+          cv.width = w; cv.height = h;
+          cv.getContext('2d').drawImage(img, 0, 0, w, h);
+          URL.revokeObjectURL(url);
+          resolve(cv.toDataURL('image/jpeg', quality));
+        } catch (e) { URL.revokeObjectURL(url); reject(e); }
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error('圖片讀取失敗')); };
+      img.src = url;
+    });
+  }
+
+  function setPhoto(dataUrl) {
+    pendingPhoto = dataUrl || null;
+    $('photoPrev').classList.toggle('hidden', !pendingPhoto);
+    $('btnPhotoClear').classList.toggle('hidden', !pendingPhoto);
+    if (pendingPhoto) $('photoImg').src = pendingPhoto;
+  }
+
+  /** 放大檢視照片 */
+  function showPhoto(dataUrl) {
+    const ov = document.createElement('div');
+    ov.className = 'overlay';
+    ov.innerHTML = '<div class="panel"><img class="full" alt="跑步機螢幕照片">' +
+      '<div class="btnrow" style="margin-top:10px"><button class="btn secondary small" data-close>關閉</button></div></div>';
+    ov.querySelector('img').src = dataUrl;
+    ov.querySelector('[data-close]').addEventListener('click', function () { ov.remove(); });
+    ov.addEventListener('click', function (e) { if (e.target === ov) ov.remove(); });
+    document.body.appendChild(ov);
+  }
+
+  $('btnPhoto').addEventListener('click', function () { $('filePhoto').click(); });
+  $('btnPhotoClear').addEventListener('click', function () { setPhoto(null); $('filePhoto').value = ''; });
+  $('photoImg').addEventListener('click', function () { if (pendingPhoto) showPhoto(pendingPhoto); });
+  $('filePhoto').addEventListener('change', function (e) {
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+    downscaleImage(f, CONFIG.photo.maxDimPx, CONFIG.photo.jpegQuality).then(function (d) {
+      setPhoto(d);
+      toast('已加入照片，請對照填入距離與時間');
+    }).catch(function () { toast('圖片讀取失敗，請改用其他照片'); });
+    e.target.value = '';
+  });
+
+  /** 由距離與時間推導速度、配速與時長並填入表單 */
+  function applyTreadmill() {
+    const dist = Number($('fDist').value);
+    const mins = parseDurationToMinutes($('fTime').value);
+    const box = $('tmDerived');
+    if (!(dist > 0) || !(mins > 0)) {
+      box.classList.add('hidden');
+      if ($('fTime').value.trim() && mins === null) {
+        box.classList.remove('hidden');
+        box.textContent = '時間格式無法解析，請用 mm:ss（例 17:12）或直接填分鐘數。';
+      }
+      return;
+    }
+    const speed = speedFromDistanceTime(dist, mins);
+    $('fSpeed').value = round(speed, 2);
+    $('fPace').value = round(speedKmhToPace(speed), 2);
+    $('fMinutes').value = round(mins, 1);
+    const met = runningMET(speed);
+    box.classList.remove('hidden');
+    box.innerHTML = '已換算：<b>' + round(speed, 2) + '</b> km/hr　配速 <b>' +
+      round(speedKmhToPace(speed), 2) + '</b> min/km　時長 <b>' + round(mins, 1) + '</b> 分　MET <b>' +
+      round(met, 2) + '</b>';
+    updatePreview();
+  }
+  $('fDist').addEventListener('input', applyTreadmill);
+  $('fTime').addEventListener('input', applyTreadmill);
 
   function syncModules() {
     const a = currentActivity();
@@ -1937,6 +2131,9 @@ function runSelfTests() {
     $('fDate').value = fmtDate(new Date());
     $('fMinutes').value = '';
     $('fSpeed').value = ''; $('fPace').value = '';
+    $('fDist').value = ''; $('fTime').value = '';
+    $('tmDerived').classList.add('hidden');
+    setPhoto(null); $('filePhoto').value = '';
     $('fNote').value = '';
     $('fOverride').checked = false;
     $('fIsStrength').checked = false;
@@ -1963,6 +2160,10 @@ function runSelfTests() {
     selectedMuscles = {}; (r.muscles || []).forEach(function (m) { selectedMuscles[m] = true; });
     swimPct = {}; if (r.meta && r.meta.swimPct) Object.assign(swimPct, r.meta.swimPct);
     if (r.meta && r.meta.speedKmh) { $('fSpeed').value = r.meta.speedKmh; $('fPace').value = round(speedKmhToPace(r.meta.speedKmh), 2); }
+    $('fDist').value = (r.meta && r.meta.distanceKm) ? r.meta.distanceKm : '';
+    $('fTime').value = (r.meta && r.meta.timeText) ? r.meta.timeText : '';
+    $('tmDerived').classList.add('hidden');
+    setPhoto((r.meta && r.meta.photo) || null);
     $('fOverride').checked = r.metSource === 'subjective';
     if (r.metSource === 'subjective') { $('fOvMet').value = r.met; $('fOvMet').dataset.touched = '1'; }
     buildMuscleChips(); buildSwimRows();
@@ -1997,18 +2198,29 @@ function runSelfTests() {
       note: $('fNote').value.trim(),
       meta: {}
     };
-    if (a && a.kind === 'run') obj.meta.speedKmh = Number($('fSpeed').value) || null;
+    if (a && a.kind === 'run') {
+      obj.meta.speedKmh = Number($('fSpeed').value) || null;
+      if (Number($('fDist').value) > 0) obj.meta.distanceKm = Number($('fDist').value);
+      if ($('fTime').value.trim()) obj.meta.timeText = $('fTime').value.trim();
+      if (pendingPhoto) obj.meta.photo = pendingPhoto;
+    }
     if (a && a.kind === 'swim') obj.meta.swimPct = JSON.parse(JSON.stringify(swimPct));
     if (r.source === 'subjective') obj.meta.subjective = { mode: ovMode, talk: $('fTalk').value, rpe: Number($('fRpe').value) || null };
 
     if (editingId) {
       records = records.map(function (x) { return x.id === editingId ? obj : x; });
-      toast('已更新');
     } else {
       records.push(obj);
-      toast('已儲存');
     }
-    saveRecords();
+    // 照片可能撐爆 localStorage 配額；寫入失敗時捨棄照片重試，紀錄本身不能丟
+    if (saveRecords()) {
+      toast(editingId ? '已更新' : '已儲存');
+    } else if (obj.meta.photo) {
+      delete obj.meta.photo;
+      toast(saveRecords() ? '儲存空間不足，已移除照片後儲存紀錄' : '儲存失敗：空間不足');
+    } else {
+      toast('儲存失敗：空間不足');
+    }
     viewWeekStart = weekStartOf(date, settings.weekStart);
     resetForm();
     switchTab('dash');

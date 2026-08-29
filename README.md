@@ -75,6 +75,7 @@ npx http-server . -p 8080
 - 日期、活動類別、時長（分鐘）
 - 依類別動態顯示欄位：
   - **跑步** → 速度（km/hr）／配速（min/km）雙向連動，即時顯示由 ACSM 方程式算出的 MET
+  - **跑步機讀數**（跑步專屬）→ 可拍照或匯入跑步機螢幕照片供對照，填入**距離 + 時間**後自動換算速度、配速、時長與 MET；時間支援 `mm:ss`、`h:mm:ss` 與純分鐘數
   - **游泳** → 12 種泳姿佔比輸入的混合泳姿加權計算器 + 強制顯示的技術經濟性警語（可摺疊）
   - **肌力** → 7 大肌群多選 + 「強度 moderate 以上」勾選
 - **主觀強度覆寫**：talk test / RPE Borg 6–20 / RPE CR10；覆寫後之紀錄標註來源為「主觀判定」
@@ -95,7 +96,7 @@ npx http-server . -p 8080
 App 內建的說明頁，可由「新增紀錄」各欄位旁的 **?** 按鈕直接跳轉至對應段落。內容依本文件第 0 節之 GRADE 宣告標示等級與出處，並置於實質內容之前。涵蓋：
 
 - **整體運動建議與醫學理論**（10 小節）：指引建議全貌、MET 的定義與物理基礎、`1 MET = 3.5` 約定的系統性偏誤、高強度計 2 倍的理論根據、absolute vs relative intensity、劑量-反應曲線形狀、有氧與肌力不可折抵的生理學理由、MET-minutes 的角色、心率公式基礎、以及本工具能與不能回答什麼
-- **各欄位怎麼填**：活動項目、時長、主觀強度覆寫、計入肌力訓練、主要肌群、強度 moderate 以上、備註
+- **各欄位怎麼填**：活動項目、時長、跑步機讀數、主觀強度覆寫、計入肌力訓練、主要肌群、強度 moderate 以上、備註
 - **抱石／攀岩怎麼記**：MET 該填多少、算不算肌力訓練、該怎麼計次才知道達標
 - **重量訓練需要計算 MET 嗎**
 - **一週兩次重量訓練就夠了嗎**
@@ -109,7 +110,7 @@ App 內建的說明頁，可由「新增紀錄」各欄位旁的 **?** 按鈕直
 - 心率模組（選用，**預設摺疊**）：Tanaka HRmax、水中修正、Karvonen 目標心率
 - 自訂活動項目管理（名稱 + MET 值，存入 localStorage）
 - 資料匯出（JSON / CSV）、匯入（JSON）、清除
-- 驗收測試（TC-1 ~ TC-11）一鍵執行
+- 驗收測試（TC-1 ~ TC-12）一鍵執行
 - 來源、GRADE 說明與免責聲明固定區塊
 
 ---
@@ -192,7 +193,23 @@ runningSpeedCheck(8.0)  // → null（邊界含 8.0）
 runningSpeedCheck(7.9)  // → { belowRange: true, minSpeedKmh: 8.0, minPaceMinPerKm: 7.5 }
 ```
 
-### 3.8 游泳混合泳姿加權
+### 3.8 跑步機讀數換算 `[實作約定]`
+
+```javascript
+parseDurationToMinutes('17:12')      // → 17.2（mm:ss）
+parseDurationToMinutes('1:17:12')    // → 77.2（h:mm:ss）
+parseDurationToMinutes('30')         // → 30（純分鐘）
+parseDurationToMinutes('abc')        // → null（無法解析時提示使用者）
+speedFromDistanceTime(2.8, 17.2)     // → 9.767 km/hr
+```
+
+換算採**全程平均速度**（距離 ÷ 時間），再由 ACSM 方程式推得 MET。若課表含大量走路休息或間歇衝刺，平均速度會低估或高估實際強度，此時應改用主觀強度覆寫。
+
+**照片處理**：照片僅存於本機 `localStorage`，不上傳、不辨識。存檔前以 canvas 縮圖至最長邊 `CONFIG.photo.maxDimPx`（1200 px）並轉為 JPEG（品質 0.72）；實測 2.9 MB 的手機照片壓縮後約 106 KB（縮減 96%）。若 `localStorage` 配額不足，程式會**捨棄照片後重試儲存**，確保運動紀錄本身不會遺失，並以提示告知使用者。
+
+**不做 OCR 的理由**：自動辨識需額外下載十餘 MB 模型並連網，違反「單檔、離線、不呼叫外部 API」的設計；且跑步機螢幕常有反光、傾斜與文字疊在背景圖上的情形，辨識錯誤會靜默寫入錯誤數值，風險高於手動輸入兩個數字。
+
+### 3.9 游泳混合泳姿加權
 
 ```
 weighted_MET = Σ (proportion_i × MET_i)
@@ -200,7 +217,7 @@ weighted_MET = Σ (proportion_i × MET_i)
 
 佔比總和非 100% 時自動正規化。
 
-### 3.9 熱量估算
+### 3.10 熱量估算
 
 ```javascript
 kcal = MET × weightKg × (durationMinutes / 60);
@@ -208,7 +225,7 @@ kcal = MET × weightKg × (durationMinutes / 60);
 
 MET 基礎之熱量計算對多數個體的準確度約 **±15–20%**，且為 **gross（總）消耗**而非 net（淨）消耗，不應作為體重管理之精確依據。
 
-### 3.10 心率模組
+### 3.11 心率模組
 
 ```javascript
 const hrMaxLand = 208 - 0.7 * age;              // Tanaka
@@ -218,7 +235,7 @@ const targetHR  = hrRest + intensityPercent * (hrMax - hrRest);   // Karvonen
 
 ---
 
-## 3.11 肌力訓練的計量方式與抱石歸屬（文獻查證）
+## 3.12 肌力訓練的計量方式與抱石歸屬（文獻查證）
 
 以下為針對「重量訓練是否需計算 MET」「一週兩次是否足夠」「抱石如何計次」三問題之查證結果，文獻均取自 PubMed。
 
@@ -276,6 +293,7 @@ const targetHR  = hrRest + intensityPercent * (hrMax - hrRest);   // Karvonen
 | `metMinutesBand` | MET-min 參考帶 `low` / `high` | 參考帶依據更新 |
 | `strength` | `minDays`、`muscleGroups`（7 組，含 id / 中文 / 英文）、GRADE 字串 | 肌群定義或天數建議調整 |
 | `running` | `minValidSpeedKmh`（ACSM 跑步方程式適用下限，現為 8.0） | ACSM 指引改版 |
+| `photo` | `maxDimPx` / `jpegQuality`（跑步機照片縮圖參數） | 需調整儲存空間與畫質的取捨時 |
 | `hr` | Tanaka 係數、水中修正預設值與可調範圍 | 新證據出現時 |
 | `subjective` | talk test / RPE 對應之預設 MET 與區間 | 校正建議更新 |
 | `swimStrokes` | 12 筆游泳 Compendium 項目（code / MET / 中英文描述） | Compendium 改版 |
@@ -377,7 +395,7 @@ mem, metMin, kcal, isStrength, strengthModerate, muscles, note
 - **App 內**：開啟 `index.html` → 設定 → 「執行自我測試」，結果以表格呈現
 - **Node**：抽出 `CORE` 區塊後呼叫 `runSelfTests()`（無需任何相依套件）
 
-**執行結果：11 / 11 通過**（於 Node 22 與 Chromium 兩種環境執行，結果一致）
+**執行結果：12 / 12 通過**（於 Node 22 與 Chromium 兩種環境執行，結果一致）
 
 | 案例 | 說明 | 期望值 | 實際執行結果 | 判定 |
 |---|---|---|---|---|
@@ -390,6 +408,7 @@ mem, metMin, kcal, isStrength, strengthModerate, muscles, note
 | **TC-7** | MEM 閾值邊界 | 149 → 未達標；150 → 基本達標；300 → 基本達標；301 → 額外效益 | **未達標 / 基本達標 / 基本達標 / 額外效益** | ✅ PASS |
 | **TC-8** | 肌群覆蓋（週一腿髖背、週四胸肩臂） | 天數達標（2 天）但腹部未覆蓋 → 肌力未達標，UI 標示缺漏肌群 | 天數 = **2**（達標）、缺漏肌群 = **腹部** → 肌力**未達標**；儀表板 7 格覆蓋圖中腹部呈灰階，並顯示「缺漏肌群：腹部（訓練天數已達標）」 | ✅ PASS |
 | **TC-9** | 短時長活動（快走 6.4 km/hr，MET 5.0，7 分鐘） | 正常計入，MEM 貢獻 = 7（不得因 <10 分鐘而排除） | MEM 貢獻 = **7**（moderate，MET-min = 35） | ✅ PASS |
+| **TC-12** | 跑步機讀數換算（實際畫面 2.8 km / 17:12） | 時間 17.2 分、速度 9.77 km/hr、MET 10.30、Vigorous、MEM 34.4、MET-min 177.2；時間格式 mm:ss／h:mm:ss／純分鐘／無效字串皆正確處理 | 時間 **17.2** 分、速度 **9.77** km/hr、MET **10.30**、**vigorous**、MEM **34.4**、MET-min **177.2**（70 kg 估計 **207 kcal**，跑步機自身顯示 **206 kcal**） | ✅ PASS |
 | **TC-11** | 達標軌跡統計（進行中當週不計入連續） | 4 週序列、雙軌達標 3 週、目前連續 3、最長連續 3；若不排除進行中當週則連續為 0 | **4 週 / 雙軌達標 3 週 / 目前連續 3 / 最長連續 3**；不排除時連續 = **0** | ✅ PASS |
 | **TC-10** | 跑步速度適用範圍（ACSM 方程式下限 8 km/hr） | 9 → 適用；8.0 → 適用（邊界含）；7.9 → 警示；5 → 警示 | 9 → **適用**；8.0 → **適用**；7.9 → **警示**；5 → **警示**（5 km/hr 誤用跑步公式得 MET **5.76**，高於快走 5.6 km/hr 查表值 4.3） | ✅ PASS |
 
