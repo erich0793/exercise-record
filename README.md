@@ -54,6 +54,7 @@ npx http-server . -p 8080
 - 環境需求：現代瀏覽器（iOS Safari / Android Chrome / 桌機瀏覽器）
 - 資料儲存於該瀏覽器的 `localStorage`，不上傳、不同步；清除瀏覽器資料會一併移除，建議定期由「設定 → 匯出 JSON」備份
 - 深色模式依系統偏好（`prefers-color-scheme`）自動切換
+- 提供四級顯示字級（設定頁最上方），字體與觸控目標一併放大，適合長輩或視力較弱者使用
 - 技術實作：vanilla JS，主體為單一 `index.html`（HTML + CSS + JS 全內嵌），趨勢圖以純 SVG 繪製
 - **例外**：跑步機數字辨識（OCR）需要 `vendor/ocr/` 內的資源（約 13 MB，Tesseract 開源引擎，自行託管、不呼叫外部 API）。這是全專案唯一的外部相依，且**僅在使用者主動按下辨識時才載入**；`index.html` 單獨存在時所有其他功能完全正常，辨識則會顯示提示並可改為手動輸入
 
@@ -108,6 +109,10 @@ App 內建的說明頁，可由「新增紀錄」各欄位旁的 **?** 按鈕直
 
 ### ⑤ 設定
 
+- **顯示字級**（置於設定頁最上方）：標準 / 大 / 特大 / 超大四級，倍率 1 / 1.15 / 1.32 / 1.5
+  - **字體與觸控目標一起放大**：按鈕、輸入框、分頁籤、標籤的內距同步縮放，超大字級下分頁籤高度達 60 px（無障礙建議 ≥44 px）
+  - 立即生效並保存於設定中，重新開啟仍維持
+  - 實作方式為單一 CSS 變數 `--fs`，所有字級宣告寫成 `calc(Npx * var(--fs))`，不需逐一調整
 - 體重、年齡、靜息心率、週起始日（預設週一）
 - 心率模組（選用，**預設摺疊**）：Tanaka HRmax、水中修正、Karvonen 目標心率
 - 自訂活動項目管理（名稱 + MET 值，存入 localStorage）
@@ -339,6 +344,7 @@ const targetHR  = hrRest + intensityPercent * (hrMax - hrRest);   // Karvonen
 | `metMinutesBand` | MET-min 參考帶 `low` / `high` | 參考帶依據更新 |
 | `strength` | `minDays`、`muscleGroups`（7 組，含 id / 中文 / 英文）、GRADE 字串 | 肌群定義或天數建議調整 |
 | `running` | `minValidSpeedKmh`（ACSM 適用下限 8.0）／`maxPlausibleSpeedKmh`（合理速度上限 45） | ACSM 指引改版 |
+| `fontSizes` | 顯示字級選項（id / 中文名稱 / 倍率） | 需要更大字級或調整級距時 |
 | `photo` | `maxDimPx` / `jpegQuality`（跑步機照片縮圖參數） | 需調整儲存空間與畫質的取捨時 |
 | `ocr` | `basePath` / `percentiles` / `psmModes` / `upscale` / `detect` / `mileToKm`（辨識資源路徑、百分位門檻、自動偵測參數） | 辨識率不佳時可增減百分位組合 |
 | `hr` | Tanaka 係數、水中修正預設值與可調範圍 | 新證據出現時 |
@@ -462,6 +468,25 @@ mem, metMin, kcal, isStrength, strengthModerate, muscles, note
 | **TC-12** | 跑步機讀數換算（實際畫面 2.8 km / 17:12） | 時間 17.2 分、速度 9.77 km/hr、MET 10.30、Vigorous、MEM 34.4、MET-min 177.2；時間格式 mm:ss／h:mm:ss／純分鐘／無效字串皆正確處理 | 時間 **17.2** 分、速度 **9.77** km/hr、MET **10.30**、**vigorous**、MEM **34.4**、MET-min **177.2**（70 kg 估計 **207 kcal**，跑步機自身顯示 **206 kcal**） | ✅ PASS |
 | **TC-11** | 達標軌跡統計（進行中當週不計入連續） | 4 週序列、雙軌達標 3 週、目前連續 3、最長連續 3；若不排除進行中當週則連續為 0 | **4 週 / 雙軌達標 3 週 / 目前連續 3 / 最長連續 3**；不排除時連續 = **0** | ✅ PASS |
 | **TC-10** | 跑步速度適用範圍（ACSM 方程式下限 8 km/hr） | 9 → 適用；8.0 → 適用（邊界含）；7.9 → 警示；5 → 警示 | 9 → **適用**；8.0 → **適用**；7.9 → **警示**；5 → **警示**（5 km/hr 誤用跑步公式得 MET **5.76**，高於快走 5.6 km/hr 查表值 4.3） | ✅ PASS |
+
+### 顯示字級驗證
+
+於 320 px（最窄常見手機）與 390 px 兩種寬度 × 四種字級，逐一檢查五個分頁：
+
+| 字級 | body 字級 | 大數字 | 320 px | 390 px |
+|---|---|---|---|---|
+| 標準 | 16 px | 34 px | 無溢出 | 無溢出 |
+| 大 | 18.4 px | 39.1 px | 無溢出 | 無溢出 |
+| 特大 | 21.1 px | 44.9 px | 無溢出 | 無溢出 |
+| 超大 | 24 px | 51 px | 無溢出 | 無溢出 |
+
+另檢查所有分頁籤在各字級下皆完整可見（不需橫向捲動）。
+
+**過程中修掉的既有問題**（放大字級後才顯現，但在標準字級的 320 px 螢幕上原本就存在）：
+
+- `.tag.grade` 承襲 `.tag` 的 `white-space:nowrap`，而 GRADE 字串（如 `Strong recommendation, Moderate certainty`）很長，在 320 px 下即溢出 21 px。已改為可換行。
+- 分頁籤原為橫向捲動，320 px 標準字級下「設定」已被擠出畫面。已改為一律可換行，五個分頁在所有組合下皆完整可見。
+- 數值與狀態並排的 `.row` 在大字級下無法換行。已加入 `flex-wrap`。
 
 ### 補充驗證（Chromium 端對端）
 
