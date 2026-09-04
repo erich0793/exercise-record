@@ -293,6 +293,8 @@ footer.refs ul{margin:0;padding-left:18px}
 .help li{margin:3px 0}
 .help .src{font-size:calc(11.5px * var(--fs));color:var(--text-faint);line-height:1.7;margin:4px 0 0}
 .help .src a{color:var(--text-faint)}
+/* DOI 等長字串無空白可斷行，窄螢幕加大字級時會撐破容器 */
+.help a,.help code{overflow-wrap:anywhere;word-break:break-word}
 .help a{color:var(--accent)}
 .help table.tt td,.help table.tt th{font-size:calc(12.5px * var(--fs));line-height:1.6}
 .tocgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:4px}
@@ -546,11 +548,19 @@ svg.chart{width:100%;height:auto;display:block}
             <div class="field" style="margin-bottom:8px"><label for="hWorkSec">高強度每組（秒）</label>
               <input type="number" id="hWorkSec" min="0" step="5" inputmode="numeric"></div>
           </div>
+          <div class="field" style="margin-bottom:8px">
+            <label for="hWorkPreset">高強度做什麼動作</label>
+            <select id="hWorkPreset"></select>
+          </div>
           <div class="grid2">
             <div class="field" style="margin-bottom:8px"><label for="hWorkMet">高強度 MET</label>
               <input type="number" id="hWorkMet" min="0" step="0.1" inputmode="decimal"></div>
             <div class="field" style="margin-bottom:8px"><label for="hRestSec">組間恢復（秒）</label>
               <input type="number" id="hRestSec" min="0" step="5" inputmode="numeric"></div>
+          </div>
+          <div class="field" style="margin-bottom:8px">
+            <label for="hRestPreset">恢復時做什麼</label>
+            <select id="hRestPreset"></select>
           </div>
           <div class="grid2">
             <div class="field" style="margin-bottom:8px"><label for="hRestMet">恢復 MET</label>
@@ -560,6 +570,10 @@ svg.chart{width:100%;height:auto;display:block}
           </div>
           <div class="field" style="margin-bottom:0"><label for="hCoolMet">緩和 MET</label>
             <input type="number" id="hCoolMet" min="0" step="0.1" inputmode="decimal"></div>
+          <p class="faint" style="margin:8px 0 0">
+            不確定 MET 填多少？<strong>選上面的動作即可自動帶入</strong>，不需要自己猜。
+            <button type="button" class="helpbtn" data-help="h-howmet" aria-label="如何知道 MET">?</button>
+          </p>
           <p class="derived hidden" id="hiitDerived"></p>
         </div>
       </div>
@@ -690,6 +704,7 @@ svg.chart{width:100%;height:auto;display:block}
       <h2>快速跳轉</h2>
       <div class="tocgrid">
         <a href="#h-theory">整體建議與醫學理論</a>
+        <a href="#h-howmet">MET 到底怎麼知道</a>
         <a href="#h-opts">各欄位怎麼填</a>
         <a href="#h-boulder">抱石／攀岩怎麼記</a>
         <a href="#h-met">重量訓練要算 MET 嗎</a>
@@ -875,6 +890,61 @@ svg.chart{width:100%;height:auto;display:block}
     </div>
 
     <div class="card">
+      <h2 id="h-howmet">MET 到底怎麼知道？</h2>
+
+      <div class="verdict">
+        <b>先講結論：你不需要「知道」自己的 MET。</b>
+        MET 是實驗室用呼吸氣體分析測出來的<strong>族群平均值</strong>，人體沒有任何感官可以感知它。要求使用者自行估計 MET 是設計上的錯誤——正確做法是<strong>挑一個相近的動作</strong>，讓查表值替你回答。
+      </div>
+
+      <h4>實務上的四個層級（由簡到繁）</h4>
+
+      <p><strong>① 直接選一個現成項目</strong>——最實用，涵蓋九成情況。<br>
+      本工具內建 38 個項目，涵蓋器械有氧、球類、徒手、舞蹈與低強度。找到最接近的那個就好，不必追求完全吻合：查表值本身就有 ±15–20% 的個體誤差，你選「羽球」還是「網球雙打」造成的差異，遠小於這個誤差。</p>
+
+      <p><strong>② HIIT 用「高強度做什麼動作」選單</strong><br>
+      間歇訓練的課表欄位提供動作選單（衝刺跑、跳繩、波比、飛輪衝刺⋯⋯），選了就自動帶入 MET。<strong>這是 HIIT 的建議做法</strong>，理由見下方 talk test 的限制。</p>
+
+      <p><strong>③ 找不到相近項目時，用 talk test 判「中強度或高強度」</strong><br>
+      不需要精確數字，只要判斷落在哪一級，再用<strong>主觀強度覆寫</strong>填入該級的代表值即可。</p>
+      <table class="tt">
+        <thead><tr><th>你的狀態</th><th>判定</th><th>本工具預設 MET</th></tr></thead>
+        <tbody>
+          <tr><td>可以講完整句子，但無法唱歌</td><td><b>Moderate</b></td><td>5.0（可調 3.0–5.9）</td></tr>
+          <tr><td>只能講幾個字就得換氣</td><td><b>Vigorous</b></td><td>7.0（可調 ≥6.0）</td></tr>
+        </tbody>
+      </table>
+
+      <p><strong>④ 有心率錶的話，可作為輔助參考</strong><br>
+      心率反映的是<strong>相對強度</strong>（占你個人能力的幾成），與 MET 這個絕對指標不同，兩者不能直接換算。可用「設定 → 心率模組」的 Karvonen 目標心率作為對照，但請留意年齡推估的 HRmax 個人準確度有限（一致性界限約 ±18–24 bpm，見理論第九節）。</p>
+
+      <h4>talk test 的效力與限制（文獻並不一致）</h4>
+      <p>talk test 是否可靠，文獻結論分歧，<strong>本工具並列呈現、不取折衷</strong>：</p>
+      <ul>
+        <li><strong>支持</strong>：以標準化流程操作時，talk test 與換氣閾值（ventilatory threshold）的關係穩健，在捐血、訓練介入等改變閾值的情境下仍同步變動，適合用於運動處方。<span class="tag grade">GRADE: Moderate</span>（驗證研究，四組獨立實驗）</li>
+        <li><strong>反對</strong>：另一項研究發現個體差異極大，受試者在換氣閾值處的主觀說話困難度分散於整個量表，結論認為<strong>非標準化</strong>形式的 talk test 並非有效的替代指標。<span class="tag grade">GRADE: Low</span>（單一臨床試驗，n 較小、僅男性）</li>
+      </ul>
+      <p><strong>差異的可能原因</strong>：兩者的操作方式不同——支持方採標準化的分級流程（以「最後一個仍能順暢說話的階段」為判準），反對方採非標準化的 13 級主觀說話困難度量表並要求受試者朗讀文字。<strong>是否標準化可能才是關鍵</strong>。本工具採用前者的二分判準（能否講完整句子），而非細分等級。</p>
+
+      <div class="verdict">
+        <b>對 HIIT 特別重要的限制</b>
+        一篇回顧明確指出，talk test <strong>可能不適用於高強度間歇訓練</strong>——20–30 秒的全力衝刺期間根本無法測試說話能力。<br>
+        因此 HIIT 請優先用<strong>動作選單</strong>；若要用主觀判定，應在<strong>該組結束後立即</strong>以 RPE 回顧該組的費力程度，而非嘗試在衝刺中說話。
+      </div>
+      <p class="src"><span class="tag grade">GRADE: Moderate</span> 出處：Foster C, Porcari JP, Anderson J, et al. The talk test as a marker of exercise training intensity. <em>J Cardiopulm Rehabil Prev.</em> 2008;28(1):24-30. 取自 PubMed，<a href="https://doi.org/10.1097/01.HCR.0000311504.41775.78" target="_blank" rel="noopener">DOI: 10.1097/01.HCR.0000311504.41775.78</a></p>
+      <p class="src"><span class="tag grade">GRADE: Low</span> 出處：Rotstein A, Meckel Y, Inbar O. Perceived speech difficulty during exercise and its relation to exercise intensity and physiological responses. <em>Eur J Appl Physiol.</em> 2004;92(4-5):431-6. 取自 PubMed，<a href="https://doi.org/10.1007/s00421-004-1160-z" target="_blank" rel="noopener">DOI: 10.1007/s00421-004-1160-z</a></p>
+      <p class="src"><span class="tag grade">GRADE: Moderate</span>（敘事性回顧）出處：Reed JL, Pipe AL. The talk test: a useful tool for prescribing and monitoring exercise intensity. <em>Curr Opin Cardiol.</em> 2014;29(5):475-80. 取自 PubMed，<a href="https://doi.org/10.1097/HCO.0000000000000097" target="_blank" rel="noopener">DOI: 10.1097/HCO.0000000000000097</a></p>
+
+      <h4>最後一件事：別為 MET 焦慮</h4>
+      <ul>
+        <li><strong>肌力達標完全不看 MET</strong>——只看天數與肌群，填多少都不影響那盞燈</li>
+        <li><strong>有氧達標的門檻與 MET 約定同源</strong>，偏誤在訂門檻與算成果時同向抵消（見理論第三節），所以即使個別數值有誤差，達標判定仍然可信</li>
+        <li><strong>真正會被 MET 誤差影響的是熱量數字</strong>，而那本來就標示著 ±15–20%，只能當參考</li>
+        <li>選錯一級（把 moderate 填成 vigorous）才會實質影響 MEM——這正是 talk test 二分判準要解決的問題</li>
+      </ul>
+    </div>
+
+    <div class="card">
       <h2 id="h-opts">各欄位怎麼填</h2>
 
       <h4 id="h-opt-activity">活動項目</h4>
@@ -900,7 +970,9 @@ svg.chart{width:100%;height:auto;display:block}
         整場平均 MET 為 5.11，若直接套用 19 分鐘 → 只得 MEM 19，<strong>低估約 26%</strong>。
       </div>
       <p><strong>平均 MET 仍會顯示</strong>，但只用於熱量估算，不用於強度判定。歷史紀錄中這類項目會標示「課表分段」，並顯示高強度／中強度各多少分鐘。</p>
-      <p><strong>MET 該填多少</strong>：預設高強度 10、恢復 3，屬<code>[實作約定]</code>的起始值而非查表測量值，請依實際課表調整。實測顯示 HIIT 的 work interval 可達 <strong>&gt;90% HRmax、&gt;84% VO₂max</strong>，因此預設值設在 vigorous 區間；若你的間歇是快走與慢跑交替，高強度段應調低。若無法判斷，改用<strong>主觀強度覆寫</strong>以 talk test 判定。</p>
+      <p><strong>MET 該填多少</strong>：<strong>用「高強度做什麼動作」選單</strong>——選衝刺跑、跳繩、波比跳等，系統自動帶入 MET，不需自行判斷。恢復段同理（慢走、站著休息、坐著休息⋯⋯）。</p>
+      <p>預設值高強度 10、恢復 3 屬<code>[實作約定]</code>的起始值而非查表測量值。實測顯示 HIIT 的 work interval 可達 <strong>&gt;90% HRmax、&gt;84% VO₂max</strong>，故預設設在 vigorous 區間；若你的間歇是快走與慢跑交替，高強度段應調低。</p>
+      <p>注意：<strong>talk test 不適用於 HIIT</strong>（衝刺中無法測試說話），詳見<a href="#h-howmet">「MET 到底怎麼知道」</a>。</p>
       <p class="src"><span class="tag grade">GRADE: Low</span>（單一交叉設計研究，n=19，含滑雪／越野滑雪／室內單車三種模式）出處：Stöggl TL, Schwarzl C, Müller EE, et al. Alpine Skiing as Winter-Time High-Intensity Training. <em>Med Sci Sports Exerc.</em> 2017;49(9):1859-1867. 取自 PubMed，<a href="https://doi.org/10.1249/MSS.0000000000001289" target="_blank" rel="noopener">DOI: 10.1249/MSS.0000000000001289</a></p>
       <p class="src"><code>[實作約定]</code> 將課表展開為區段並逐段歸類，為本工具的計算方式；WHO 2020 與 US PAG 2018 均未針對間歇訓練提供專屬換算規則。Compendium 亦無「HIIT」對應代碼。</p>
 
@@ -1233,7 +1305,29 @@ const CONFIG = {
   hiit: {
     warmupMin: 5, warmupMet: 4,
     rounds: 8, workSec: 30, workMet: 10, restSec: 30, restMet: 3,
-    cooldownMin: 5, cooldownMet: 3
+    cooldownMin: 5, cooldownMet: 3,
+    /**
+     * 強度選單：讓使用者「選一個相近的動作」而非自行猜測 MET。
+     * 一般人無法感知自己的 MET；talk test 在間歇的短衝刺中也難以執行
+     * （Reed & Pipe 2014 明確指出可能不適用於 HIIT），故以對照動作為主要方式。
+     * 數值沿用本表其他項目，或由 ACSM 跑步方程式即時算出。
+     */
+    workPresets: [
+      { zh: '衝刺跑（約 15 km/hr）', runSpeedKmh: 15 },
+      { zh: '快跑（約 12 km/hr）',   runSpeedKmh: 12 },
+      { zh: '跳繩',                 activityId: 'rope' },
+      { zh: '波比跳／徒手爆發動作',   activityId: 'caliVig' },
+      { zh: '階梯機／陡坡快走',      activityId: 'stepper' },
+      { zh: '飛輪衝刺',             activityId: 'bikeStatVig' },
+      { zh: '划船機全力',           activityId: 'rowVig' }
+    ],
+    restPresets: [
+      { zh: '慢走（約 3 km/hr）',   met: 2.8 },
+      { zh: '原地踏步／輕鬆伸展',   met: 2.3 },
+      { zh: '站著休息',             met: 1.8 },
+      { zh: '坐著／完全休息',       met: 1.3 },
+      { zh: '快走（5.6 km/hr）',    activityId: 'walk56' }
+    ]
   },
 
   /** 字級：供視力較弱或長者調整；倍率同時套用於字體與觸控目標 */
@@ -1663,6 +1757,20 @@ function addDays(dateStr, n) {
 }
 
 /**
+ * 解析強度選單項目為 MET 值。
+ * 支援三種來源：直接給值、參照活動清單、或由跑步速度即時計算。
+ */
+function presetMet(preset) {
+  if (!preset) return 0;
+  if (preset.runSpeedKmh) return runningMET(preset.runSpeedKmh);
+  if (preset.activityId) {
+    const a = CONFIG.activities.filter(function (x) { return x.id === preset.activityId; })[0];
+    return (a && a.met) || 0;
+  }
+  return Number(preset.met) || 0;
+}
+
+/**
  * 由區段計算強度分布與 MEM。
  * 間歇訓練（HIIT、循環訓練）不可用整場平均 MET 判定強度：
  * 指引是分別累計各強度的分鐘數，平均後會把高強度區段稀釋成中強度而低估 MEM。
@@ -1896,6 +2004,31 @@ function runSelfTests() {
       actual: '天數=' + s.days + '（' + (s.daysOk ? '達標' : '未達標') + '）、缺漏肌群=' + (missingZh || '無') + ' → 肌力' + (s.met ? '達標' : '未達標'),
       pass: s.days === 2 && s.daysOk === true && s.groupsOk === false && s.met === false &&
             s.missing.length === 1 && s.missing[0].id === 'abdomen' });
+  })();
+
+  // TC-18：強度選單——使用者選動作即可帶入 MET，不需自行估計
+  (function () {
+    const w = CONFIG.hiit.workPresets.map(function (p) {
+      return { zh: p.zh, met: presetMet(p), cls: classifyIntensity(presetMet(p)) };
+    });
+    const r = CONFIG.hiit.restPresets.map(function (p) {
+      return { zh: p.zh, met: presetMet(p), cls: classifyIntensity(presetMet(p)) };
+    });
+    // 高強度選項必須全部落在 vigorous；恢復選項不得落在 vigorous
+    const workOk = w.length >= 5 && w.every(function (x) { return x.cls === 'vigorous'; });
+    const restOk = r.length >= 4 && r.every(function (x) { return x.cls !== 'vigorous'; });
+    // 參照活動清單者須取到與該項目相同的值；跑步者須與方程式一致
+    const ropeMet = presetMet({ activityId: 'rope' });
+    const sprintMet = presetMet({ runSpeedKmh: 15 });
+    const linked = ropeMet === 11.8 && Math.abs(sprintMet - runningMET(15)) < 1e-9;
+    const badPreset = presetMet(null) === 0 && presetMet({ activityId: 'noSuchThing' }) === 0;
+    T.push({ id: 'TC-18', name: '強度選單解析（選動作即帶入 MET）',
+      expected: '高強度選項全為 vigorous、恢復選項皆非 vigorous；參照項目與跑步公式取值一致；無效項目回傳 0',
+      actual: '高強度 ' + w.length + ' 項（' + (workOk ? '全為 vigorous' : '有不符') + '）、恢復 ' + r.length +
+              ' 項（' + (restOk ? '皆非 vigorous' : '有不符') + '）；跳繩 ' + ropeMet + '、衝刺跑 ' +
+              round(sprintMet, 2) + '（與方程式一致：' + (linked ? '是' : '否') + '）；無效項目回傳 0：' +
+              (badPreset ? '是' : '否'),
+      pass: workOk && restOk && linked && badPreset });
   })();
 
   // TC-17：間歇訓練依區段歸類（不得用整場平均 MET 判定強度）
@@ -2400,6 +2533,27 @@ function runSelfTests() {
 
   ['hWarmMin','hWarmMet','hRounds','hWorkSec','hWorkMet','hRestSec','hRestMet','hCoolMin','hCoolMet']
     .forEach(function (id) { $(id).addEventListener('input', updatePreview); });
+
+  /** 建立強度選單：選了動作就自動帶入 MET，使用者不必自行判斷 */
+  function buildHiitPresets() {
+    const fill = function (selId, metId, presets) {
+      $(selId).innerHTML = '<option value="">— 自行輸入 MET —</option>' +
+        presets.map(function (p, i) {
+          return '<option value="' + i + '">' + esc(p.zh) + '（MET ' + round(presetMet(p), 1) + '）</option>';
+        }).join('');
+      $(selId).addEventListener('change', function () {
+        const i = $(selId).value;
+        if (i === '') return;
+        $(metId).value = round(presetMet(presets[Number(i)]), 2);
+        updatePreview();
+      });
+      // 手動改動 MET 時取消選單對應，避免顯示與數值不符
+      $(metId).addEventListener('input', function () { $(selId).value = ''; });
+    };
+    fill('hWorkPreset', 'hWorkMet', CONFIG.hiit.workPresets);
+    fill('hRestPreset', 'hRestMet', CONFIG.hiit.restPresets);
+  }
+  buildHiitPresets();
 
   /* ---------- 跑步機讀數：照片與距離時間換算 ---------- */
   let pendingPhoto = null;   // 目前表單上的照片（dataURL）
@@ -3276,6 +3430,7 @@ function runSelfTests() {
     $('fSpeed').value = ''; $('fPace').value = '';
     $('fDist').value = ''; $('fTime').value = '';
     fillHiitForm(null); $('hiitDerived').classList.add('hidden');
+    $('hWorkPreset').value = ''; $('hRestPreset').value = '';
     $('tmDerived').classList.add('hidden');
     setPhoto(null); $('filePhoto').value = '';
     $('fNote').value = '';

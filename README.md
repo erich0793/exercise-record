@@ -101,7 +101,8 @@ npx http-server . -p 8080
 App 內建的說明頁，可由「新增紀錄」各欄位旁的 **?** 按鈕直接跳轉至對應段落。內容依本文件第 0 節之 GRADE 宣告標示等級與出處，並置於實質內容之前。涵蓋：
 
 - **整體運動建議與醫學理論**（10 小節）：指引建議全貌、MET 的定義與物理基礎、`1 MET = 3.5` 約定的系統性偏誤、高強度計 2 倍的理論根據、absolute vs relative intensity、劑量-反應曲線形狀、有氧與肌力不可折抵的生理學理由、MET-minutes 的角色、心率公式基礎、以及本工具能與不能回答什麼
-- **各欄位怎麼填**：活動項目、時長、跑步機讀數與自動辨識、主觀強度覆寫、計入肌力訓練、主要肌群、強度 moderate 以上、備註
+- **MET 到底怎麼知道**：一般人無法感知自己的 MET，本節說明四個實務層級（選現成項目 → HIIT 動作選單 → talk test 二分判定 → 心率輔助），並並列呈現 talk test 效力的正反文獻與其在 HIIT 上的限制
+- **各欄位怎麼填**：活動項目、時長、HIIT 課表、跑步機讀數與自動辨識、主觀強度覆寫、計入肌力訓練、主要肌群、強度 moderate 以上、備註
 - **抱石／攀岩怎麼記**：MET 該填多少、算不算肌力訓練、該怎麼計次才知道達標
 - **重量訓練需要計算 MET 嗎**
 - **一週兩次重量訓練就夠了嗎**
@@ -119,7 +120,7 @@ App 內建的說明頁，可由「新增紀錄」各欄位旁的 **?** 按鈕直
 - 心率模組（選用，**預設摺疊**）：Tanaka HRmax、水中修正、Karvonen 目標心率
 - 自訂活動項目管理（名稱 + MET 值，存入 localStorage）
 - 資料匯出（JSON / CSV）、匯入（JSON）、清除
-- 驗收測試（TC-1 ~ TC-17）一鍵執行
+- 驗收測試（TC-1 ~ TC-18）一鍵執行
 - 來源、GRADE 說明與免責聲明固定區塊
 
 ---
@@ -230,6 +231,8 @@ speedFromDistanceTime(2.8, 17.2)     // → 9.767 km/hr
 | 整場平均 MET 5.11 直接套用 19 分 | — | 19 分 | 19（低估約 26%）|
 
 平均 MET 仍會顯示並用於熱量估算，但**不用於強度判定**。歷史紀錄標示「課表分段」並列出各強度分鐘數；CSV 匯出新增 `vigorousMin` / `moderateMin` 欄位。
+
+**強度選單**：使用者無法感知自己的 MET，故課表提供「高強度做什麼動作」與「恢復時做什麼」兩個選單，選了即自動帶入 MET。選項值由 `presetMet()` 解析，來源為既有活動清單（跳繩、波比、飛輪衝刺⋯⋯）或 ACSM 跑步方程式即時計算（衝刺跑、快跑），不另行新增未查證的數值。手動修改 MET 時選單自動清空，避免顯示與數值不符。
 
 **預設值**：高強度 10 MET、恢復 3 MET，屬實作約定的起始值而非查表測量值。實測顯示 HIIT 的 work interval 可達 >90% HRmax、>84% VO₂max，故預設設在 vigorous 區間。Compendium 無「HIIT」對應代碼，WHO 2020 與 US PAG 2018 亦未提供間歇訓練的專屬換算規則。
 
@@ -468,7 +471,7 @@ mem, metMin, kcal, isStrength, strengthModerate, muscles, note
 - **App 內**：開啟 `index.html` → 設定 → 「執行自我測試」，結果以表格呈現
 - **Node**：抽出 `CORE` 區塊後呼叫 `runSelfTests()`（無需任何相依套件）
 
-**執行結果：17 / 17 通過**（於 Node 22 與 Chromium 兩種環境執行，結果一致）
+**執行結果：18 / 18 通過**（於 Node 22 與 Chromium 兩種環境執行，結果一致）
 
 | 案例 | 說明 | 期望值 | 實際執行結果 | 判定 |
 |---|---|---|---|---|
@@ -481,6 +484,7 @@ mem, metMin, kcal, isStrength, strengthModerate, muscles, note
 | **TC-7** | MEM 閾值邊界 | 149 → 未達標；150 → 基本達標；300 → 基本達標；301 → 額外效益 | **未達標 / 基本達標 / 基本達標 / 額外效益** | ✅ PASS |
 | **TC-8** | 肌群覆蓋（週一腿髖背、週四胸肩臂） | 天數達標（2 天）但腹部未覆蓋 → 肌力未達標，UI 標示缺漏肌群 | 天數 = **2**（達標）、缺漏肌群 = **腹部** → 肌力**未達標**；儀表板 7 格覆蓋圖中腹部呈灰階，並顯示「缺漏肌群：腹部（訓練天數已達標）」 | ✅ PASS |
 | **TC-9** | 短時長活動（快走 6.4 km/hr，MET 5.0，7 分鐘） | 正常計入，MEM 貢獻 = 7（不得因 <10 分鐘而排除） | MEM 貢獻 = **7**（moderate，MET-min = 35） | ✅ PASS |
+| **TC-18** | 強度選單解析（選動作即帶入 MET） | 高強度選項全為 vigorous、恢復選項皆非 vigorous；參照項目與跑步公式取值一致；無效項目回傳 0 | 高強度 **7 項全為 vigorous**、恢復 **5 項皆非 vigorous**；跳繩 **11.8**、衝刺跑 **15.29**（與方程式一致）；無效項目回傳 **0** | ✅ PASS |
 | **TC-17** | 間歇訓練分段計算（HIIT 5×(1 分 10 MET + 1 分 3 MET)） | 總時長 19 分、高強度 5 分、中強度 14 分、MEM 24、MET-min 97；整場平均 MET 5.11 直接套用只得 MEM 19；週彙總須採區段結果 | 總時長 **19** 分、高強度 **5** 分、中強度 **14** 分、MEM **24**、MET-min **97**；平均 MET 5.11 直接套用只得 MEM **19**；週彙總 MEM **24**、高強度 **5** 分 | ✅ PASS |
 | **TC-16** | 交叉驗證（票數最高者若物理上不可能則排除） | 距離候選 28（2 票）／2.8（1 票）搭配時間 17:12 → 選出 2.8；無可行組合 → null | 選出距離 **2.8**、時間 **17:12**（**9.8 km/hr**）；無可行組合時回傳 **null** | ✅ PASS |
 | **TC-15** | 速度合理性攔阻（上限 45 km/hr） | 正確讀數通過；誤讀成 28 km / 1.2 分（1400 km/hr）攔下；0 攔下；45 邊界通過 | 正確讀數**通過**；誤讀**攔下**（tooFast）；0 **攔下**；邊界 45 **通過** | ✅ PASS |
@@ -540,6 +544,14 @@ Karvonen(rest 60, 60% HRR)   = 134.1 bpm
 
 - 2024 Adult Compendium of Physical Activities (ages 19–59), Arizona State University.
 
+**talk test 之效力（結論分歧，並列呈現不取折衷）**
+
+- Foster C, Porcari JP, Anderson J, et al. The talk test as a marker of exercise training intensity. *J Cardiopulm Rehabil Prev.* 2008;28(1):24-30. [DOI: 10.1097/01.HCR.0000311504.41775.78](https://doi.org/10.1097/01.HCR.0000311504.41775.78) — 支持：與換氣閾值關係穩健
+- Rotstein A, Meckel Y, Inbar O. Perceived speech difficulty during exercise and its relation to exercise intensity and physiological responses. *Eur J Appl Physiol.* 2004;92(4-5):431-6. [DOI: 10.1007/s00421-004-1160-z](https://doi.org/10.1007/s00421-004-1160-z) — 反對：非標準化形式個體差異過大
+- Reed JL, Pipe AL. The talk test: a useful tool for prescribing and monitoring exercise intensity. *Curr Opin Cardiol.* 2014;29(5):475-80. [DOI: 10.1097/HCO.0000000000000097](https://doi.org/10.1097/HCO.0000000000000097) — 回顧：跨模式一致，但**可能不適用於 HIIT**
+
+差異可能源自操作方式：支持方採標準化分級流程，反對方採非標準化的 13 級主觀說話困難度量表。本工具採二分判準（能否講完整句子），並在 HIIT 情境改以動作選單為主。
+
 **MET 約定之效度**（取自 PubMed，附原始文章 DOI）
 
 - Cunha FA, Midgley AW, Montenegro R, Oliveira RB, Farinatti PTV. Metabolic equivalent concept in apparently healthy men: a re-examination of the standard oxygen uptake value of 3.5 mL·kg⁻¹·min⁻¹. *Appl Physiol Nutr Metab.* 2013;38(11):1115-9. [DOI: 10.1139/apnm-2012-0492](https://doi.org/10.1139/apnm-2012-0492)
@@ -595,6 +607,7 @@ Karvonen(rest 60, 60% HRR)   = 134.1 bpm
 - **頻率與訓練量的拆分**：現有統合分析多以未訓練者為受試對象，已有訓練經驗者的證據仍不足。
 - **年齡推估 HRmax 的個人準確度**：現有公式（含 Tanaka）平均偏誤雖小（−3 至 +6 bpm），但一致性界限寬達約 ±18–24 bpm，無任何公式具備高度個人層級準確度。不同大型研究給出的公式亦不相同（Tanaka `208 − 0.7×年齡` vs HUNT `211 − 0.64×年齡`，40 歲時差 5 bpm）。**本工具不對這些公式取平均**，採用 Tanaka 並於說明中並列各來源數值。provided sources 未提供可靠的個人化校正方法。
 - **新增活動項目的 MET 值**：游泳項目附有 Compendium 代碼（由規格提供）；本次新增的 24 個項目採 Compendium 廣泛引用之數值，但**未逐一核對 2024 版的代碼與小數位**。這些值足以用於達標判定（誤差方向與門檻同源），若需精確值應查核後以自訂項目覆蓋。
+- **talk test 的效力**：文獻結論分歧（見上），且回顧明確指出可能不適用於 HIIT。provided sources 未提供標準化與非標準化操作差異的量化比較。
 - **間歇訓練的官方換算規則**：provided sources 未提供間歇訓練的專屬換算方法，Compendium 亦無「HIIT」對應代碼。本工具的分段計算為實作約定，其依據是指引「分別累計各強度分鐘數」的計量方式。
 - **時效性**：指引與 Compendium 均會改版。CONFIG 中所有常數須註記版本年份，建議每 2 年重新查核。
 - **個別化**：本工具為一般性計算，不取代個別臨床評估。
