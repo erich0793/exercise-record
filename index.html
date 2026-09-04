@@ -525,6 +525,45 @@ svg.chart{width:100%;height:auto;display:block}
         </div>
       </div>
 
+      <!-- HIIT 課表模組 -->
+      <div id="modHiit" class="hidden">
+        <div class="callout" style="margin-top:0">
+          間歇訓練<strong>不使用整場平均 MET</strong>：指引是分別累計各強度的分鐘數，平均後會把高強度區段稀釋成中強度而低估 MEM。
+          填入課表後，系統會逐段歸類計算。
+          <button type="button" class="helpbtn" data-help="h-opt-hiit" aria-label="HIIT 說明">?</button>
+        </div>
+        <div class="tmpanel">
+          <label>課表結構</label>
+          <div class="grid2">
+            <div class="field" style="margin-bottom:8px"><label for="hWarmMin">熱身（分鐘）</label>
+              <input type="number" id="hWarmMin" min="0" step="1" inputmode="numeric"></div>
+            <div class="field" style="margin-bottom:8px"><label for="hWarmMet">熱身 MET</label>
+              <input type="number" id="hWarmMet" min="0" step="0.1" inputmode="decimal"></div>
+          </div>
+          <div class="grid2">
+            <div class="field" style="margin-bottom:8px"><label for="hRounds">組數</label>
+              <input type="number" id="hRounds" min="1" step="1" inputmode="numeric"></div>
+            <div class="field" style="margin-bottom:8px"><label for="hWorkSec">高強度每組（秒）</label>
+              <input type="number" id="hWorkSec" min="0" step="5" inputmode="numeric"></div>
+          </div>
+          <div class="grid2">
+            <div class="field" style="margin-bottom:8px"><label for="hWorkMet">高強度 MET</label>
+              <input type="number" id="hWorkMet" min="0" step="0.1" inputmode="decimal"></div>
+            <div class="field" style="margin-bottom:8px"><label for="hRestSec">組間恢復（秒）</label>
+              <input type="number" id="hRestSec" min="0" step="5" inputmode="numeric"></div>
+          </div>
+          <div class="grid2">
+            <div class="field" style="margin-bottom:8px"><label for="hRestMet">恢復 MET</label>
+              <input type="number" id="hRestMet" min="0" step="0.1" inputmode="decimal"></div>
+            <div class="field" style="margin-bottom:8px"><label for="hCoolMin">緩和（分鐘）</label>
+              <input type="number" id="hCoolMin" min="0" step="1" inputmode="numeric"></div>
+          </div>
+          <div class="field" style="margin-bottom:0"><label for="hCoolMet">緩和 MET</label>
+            <input type="number" id="hCoolMet" min="0" step="0.1" inputmode="decimal"></div>
+          <p class="derived hidden" id="hiitDerived"></p>
+        </div>
+      </div>
+
       <!-- 攀岩類項目提示：肌群覆蓋偏向拉的動作 -->
       <div id="modClimb" class="callout hidden">
         <strong>抱石／攀岩的肌群怎麼勾</strong><br>
@@ -840,12 +879,30 @@ svg.chart{width:100%;height:auto;display:block}
 
       <h4 id="h-opt-activity">活動項目</h4>
       <p>決定 MET 值的來源。多數項目直接查表；<strong>跑步</strong>改用速度動態計算，<strong>游泳</strong>改用泳姿加權。查不到的項目可在「設定 → 自訂活動項目」自行新增。</p>
+      <p>項目依類型分組：跑步、游泳、步行、自行車、攀岩、肌力、水域、間歇訓練、器械有氧、徒手訓練、球類、舞蹈與格鬥、低強度。</p>
       <p class="src"><code>[參考測量值]</code> 出處：2024 Adult Compendium of Physical Activities (ages 19–59), Arizona State University。此為測量參考資料，非臨床建議。</p>
+      <div class="callout">
+        <strong>關於新增項目的 MET 值</strong>：游泳項目附有 Compendium 代碼（見規格）；其餘項目採 Compendium 廣泛引用之數值，但<strong>本工具未逐一核對 2024 版的代碼與小數位</strong>。這些值足以用於達標判定（誤差方向與門檻同源，見理論第三節），但若你需要精確值，請查核後以「設定 → 自訂活動項目」建立自己的版本覆蓋。
+      </div>
 
       <h4 id="h-opt-minutes">時長（分鐘）</h4>
       <p>填實際活動時間。<strong>沒有最低門檻</strong>——2018 PAG 已取消舊版「單次至少 10 分鐘」的規定，走路 7 分鐘一樣全數計入。</p>
       <p>抱石這類「爬一下、休息一下」的間歇型活動，建議填<strong>實際在牆上的時間加上組間短休</strong>，也就是你認為自己「在運動」的總時間，不要把整場泡在館裡的時間都算進去。</p>
       <p class="src"><code>[指引慣例]</code> 出處：US Physical Activity Guidelines for Americans, 2nd ed. (2018)。</p>
+
+      <h4 id="h-opt-hiit">HIIT 與間歇訓練</h4>
+      <p>選擇「HIIT 高強度間歇」時會出現課表輸入：熱身、組數、每組高強度秒數與 MET、組間恢復、緩和。系統會把課表<strong>展開成區段</strong>逐一計算，時長自動推得，不需自己加總。</p>
+      <p><strong>為什麼不用單一 MET 查表</strong>：指引是<strong>分別累計各強度的分鐘數</strong>（MEM = 中強度分鐘 + 2 × 高強度分鐘），而間歇訓練把高強度與恢復期交錯在一起。若先平均再判定，高強度區段會被恢復期稀釋成中強度，MEM 就被低估。</p>
+      <div class="verdict">
+        <b>實際差距</b>
+        以「熱身 5 分（4 MET）+ 5 組（1 分 10 MET 高強度 + 1 分 3 MET 恢復）+ 緩和 5 分（3 MET）」為例：<br>
+        <strong>分段計算</strong>：高強度 5 分、中強度 14 分 → <strong>MEM 24</strong><br>
+        整場平均 MET 為 5.11，若直接套用 19 分鐘 → 只得 MEM 19，<strong>低估約 26%</strong>。
+      </div>
+      <p><strong>平均 MET 仍會顯示</strong>，但只用於熱量估算，不用於強度判定。歷史紀錄中這類項目會標示「課表分段」，並顯示高強度／中強度各多少分鐘。</p>
+      <p><strong>MET 該填多少</strong>：預設高強度 10、恢復 3，屬<code>[實作約定]</code>的起始值而非查表測量值，請依實際課表調整。實測顯示 HIIT 的 work interval 可達 <strong>&gt;90% HRmax、&gt;84% VO₂max</strong>，因此預設值設在 vigorous 區間；若你的間歇是快走與慢跑交替，高強度段應調低。若無法判斷，改用<strong>主觀強度覆寫</strong>以 talk test 判定。</p>
+      <p class="src"><span class="tag grade">GRADE: Low</span>（單一交叉設計研究，n=19，含滑雪／越野滑雪／室內單車三種模式）出處：Stöggl TL, Schwarzl C, Müller EE, et al. Alpine Skiing as Winter-Time High-Intensity Training. <em>Med Sci Sports Exerc.</em> 2017;49(9):1859-1867. 取自 PubMed，<a href="https://doi.org/10.1249/MSS.0000000000001289" target="_blank" rel="noopener">DOI: 10.1249/MSS.0000000000001289</a></p>
+      <p class="src"><code>[實作約定]</code> 將課表展開為區段並逐段歸類，為本工具的計算方式；WHO 2020 與 US PAG 2018 均未針對間歇訓練提供專屬換算規則。Compendium 亦無「HIIT」對應代碼。</p>
 
       <h4 id="h-opt-treadmill">跑步機讀數（照片與距離時間換算）</h4>
       <p>選擇「跑步」時會出現此面板。你可以拍下或匯入跑步機螢幕的照片，<strong>照片只存在你的裝置上，不會上傳</strong>，存檔前會自動縮圖以免佔滿瀏覽器儲存空間。</p>
@@ -1168,6 +1225,17 @@ const CONFIG = {
     ]
   },
 
+  /**
+   * HIIT 預設課表 [實作約定]
+   * 這些是可調整的起始值，非查表測量值。work interval 的實測強度可達
+   * >90% HRmax、>84% VO2max（Stöggl 2017），故預設以 vigorous 區間設定。
+   */
+  hiit: {
+    warmupMin: 5, warmupMet: 4,
+    rounds: 8, workSec: 30, workMet: 10, restSec: 30, restMet: 3,
+    cooldownMin: 5, cooldownMet: 3
+  },
+
   /** 字級：供視力較弱或長者調整；倍率同時套用於字體與觸控目標 */
   fontSizes: [
     { id: 'm',   zh: '標準', scale: 1 },
@@ -1255,7 +1323,45 @@ const CONFIG = {
     { id: 'wtMod',   name: '重量訓練（一般，moderate effort）', met: 3.5, group: '肌力', note: '計入肌力，亦可計入有氧', strengthDefault: true },
     { id: 'wtVig',   name: '重量訓練（vigorous effort）',       met: 6.0, group: '肌力', strengthDefault: true },
     { id: 'aquajog', name: '水中慢跑（vigorous）',   met: 9.8, group: '水域' },
-    { id: 'stairs',  name: '樓梯上行',              met: 8.8, group: '其他' }
+
+    /* 間歇訓練：以區段計算，不套用單一查表 MET */
+    { id: 'hiit',    name: 'HIIT 高強度間歇（依課表計算）', met: null, kind: 'hiit', group: '間歇訓練' },
+    { id: 'circuit', name: '循環訓練（器械／徒手輪轉）', met: 8.0, group: '間歇訓練', strengthDefault: true },
+
+    /* 健身房器械有氧 */
+    { id: 'bikeStatMod', name: '飛輪／固定式腳踏車（moderate）', met: 6.8, group: '器械有氧' },
+    { id: 'bikeStatVig', name: '飛輪／固定式腳踏車（vigorous）', met: 8.8, group: '器械有氧' },
+    { id: 'rowMod',      name: '划船機（moderate，約 100 W）',   met: 7.0, group: '器械有氧' },
+    { id: 'rowVig',      name: '划船機（vigorous，約 150 W）',   met: 8.5, group: '器械有氧' },
+    { id: 'elliptical',  name: '橢圓機',                        met: 5.0, group: '器械有氧' },
+    { id: 'stepper',     name: '階梯機（stair-treadmill）',      met: 9.0, group: '器械有氧' },
+    { id: 'stairs',      name: '樓梯上行',                      met: 8.8, group: '器械有氧' },
+
+    /* 徒手與跳繩 */
+    { id: 'caliVig', name: '徒手健身（vigorous：伏地挺身、波比等）', met: 8.0, group: '徒手訓練', strengthDefault: true },
+    { id: 'caliMod', name: '徒手健身（moderate：一般核心訓練）',    met: 3.8, group: '徒手訓練', strengthDefault: true },
+    { id: 'rope',    name: '跳繩',                                met: 11.8, group: '徒手訓練' },
+
+    /* 球類與團體運動 */
+    { id: 'basketball', name: '籃球（比賽）',       met: 8.0,  group: '球類' },
+    { id: 'badminton',  name: '羽球（一般）',       met: 5.5,  group: '球類' },
+    { id: 'tennisS',    name: '網球（單打）',       met: 8.0,  group: '球類' },
+    { id: 'tennisD',    name: '網球（雙打）',       met: 6.0,  group: '球類' },
+    { id: 'tabletennis',name: '桌球',               met: 4.0,  group: '球類' },
+    { id: 'soccer',     name: '足球（一般）',       met: 7.0,  group: '球類' },
+    { id: 'volleyball', name: '排球（休閒）',       met: 3.0,  group: '球類' },
+
+    /* 舞蹈、格鬥與戶外 */
+    { id: 'aerodance', name: '有氧舞蹈／韻律課',   met: 7.3,  group: '舞蹈與格鬥' },
+    { id: 'boxingbag', name: '拳擊（打沙袋）',     met: 5.5,  group: '舞蹈與格鬥' },
+    { id: 'martial',   name: '武術／跆拳道（中等節奏）', met: 10.3, group: '舞蹈與格鬥' },
+    { id: 'hiking',    name: '登山健行（越野）',   met: 6.0,  group: '舞蹈與格鬥' },
+
+    /* 低強度與柔軟度（多屬 light，不計入 MEM，但仍計熱量） */
+    { id: 'yogaHatha', name: '瑜伽（Hatha）',      met: 2.5, group: '低強度' },
+    { id: 'yogaPower', name: '瑜伽（Power／流動）', met: 4.0, group: '低強度' },
+    { id: 'pilates',   name: '皮拉提斯',           met: 3.0, group: '低強度', strengthDefault: true },
+    { id: 'stretch',   name: '伸展／柔軟度訓練',   met: 2.3, group: '低強度' }
   ]
 };
 
@@ -1556,10 +1662,55 @@ function addDays(dateStr, n) {
   return fmtDate(d);
 }
 
+/**
+ * 由區段計算強度分布與 MEM。
+ * 間歇訓練（HIIT、循環訓練）不可用整場平均 MET 判定強度：
+ * 指引是分別累計各強度的分鐘數，平均後會把高強度區段稀釋成中強度而低估 MEM。
+ * segments: [{ met, minutes, label }]
+ */
+function segmentTotals(segments) {
+  let modMin = 0, vigMin = 0, mem = 0, metMin = 0, total = 0;
+  (segments || []).forEach(function (sg) {
+    const mins = Number(sg.minutes) || 0;
+    const met = Number(sg.met) || 0;
+    if (mins <= 0 || met <= 0) return;
+    const c = classifyIntensity(met);
+    if (c === 'moderate') modMin += mins;
+    if (c === 'vigorous') vigMin += mins;
+    mem += memContribution(met, mins);
+    metMin += met * mins;
+    total += mins;
+  });
+  return { modMin: modMin, vigMin: vigMin, mem: mem, metMin: metMin,
+           minutes: total, avgMet: total > 0 ? metMin / total : 0 };
+}
+
+/** 由 HIIT 課表參數展開為區段清單 */
+function hiitSegments(plan) {
+  const out = [];
+  const p = plan || {};
+  if (p.warmupMin > 0) out.push({ label: '熱身', met: p.warmupMet, minutes: p.warmupMin });
+  const rounds = Math.max(0, Math.round(p.rounds || 0));
+  for (let i = 0; i < rounds; i++) {
+    if (p.workSec > 0) out.push({ label: '高強度', met: p.workMet, minutes: p.workSec / 60 });
+    // 最後一組後的恢復期通常併入緩和，不重複計入
+    if (p.restSec > 0 && i < rounds - 1) out.push({ label: '恢復', met: p.restMet, minutes: p.restSec / 60 });
+  }
+  if (p.cooldownMin > 0) out.push({ label: '緩和', met: p.cooldownMet, minutes: p.cooldownMin });
+  return out;
+}
+
 /** 週彙總 */
 function summarizeWeek(records, weightKg) {
   let modMin = 0, vigMin = 0, mem = 0, mm = 0, kcal = 0;
   records.forEach(function (r) {
+    if (r.segments && r.segments.length) {
+      // 間歇紀錄依區段累計，各段以自身強度歸類
+      const t = segmentTotals(r.segments);
+      modMin += t.modMin; vigMin += t.vigMin; mem += t.mem; mm += t.metMin;
+      kcal += kcalOf(t.avgMet, weightKg || 0, t.minutes);
+      return;
+    }
     const c = classifyIntensity(r.met);
     if (c === 'moderate') modMin += r.minutes;
     if (c === 'vigorous') vigMin += r.minutes;
@@ -1745,6 +1896,30 @@ function runSelfTests() {
       actual: '天數=' + s.days + '（' + (s.daysOk ? '達標' : '未達標') + '）、缺漏肌群=' + (missingZh || '無') + ' → 肌力' + (s.met ? '達標' : '未達標'),
       pass: s.days === 2 && s.daysOk === true && s.groupsOk === false && s.met === false &&
             s.missing.length === 1 && s.missing[0].id === 'abdomen' });
+  })();
+
+  // TC-17：間歇訓練依區段歸類（不得用整場平均 MET 判定強度）
+  (function () {
+    const plan = { warmupMin: 5, warmupMet: 4, rounds: 5, workSec: 60, workMet: 10,
+                   restSec: 60, restMet: 3, cooldownMin: 5, cooldownMet: 3 };
+    const segs = hiitSegments(plan);
+    const t = segmentTotals(segs);
+    // 若誤用整場平均 MET，高強度區段會被稀釋成中強度
+    const wrong = memContribution(t.avgMet, t.minutes);
+    // 週彙總須採用區段結果
+    const recs = [{ date: '2026-09-01', met: t.avgMet, minutes: t.minutes,
+                    segments: segs, isStrength: false, strengthModerate: true, muscles: [] }];
+    const wk = summarizeWeek(recs, 70);
+    T.push({ id: 'TC-17', name: '間歇訓練分段計算（HIIT 5×(1 分 10 MET + 1 分 3 MET)）',
+      expected: '總時長 19 分、高強度 5 分、中強度 14 分、MEM 24、MET-min 97；' +
+                '整場平均 MET 5.11 若直接套用只得 MEM 19（低估）；週彙總須採區段結果',
+      actual: '總時長 ' + round(t.minutes, 1) + ' 分、高強度 ' + round(t.vigMin, 1) + ' 分、中強度 ' +
+              round(t.modMin, 1) + ' 分、MEM ' + round(t.mem, 1) + '、MET-min ' + round(t.metMin, 0) +
+              '；平均 MET ' + round(t.avgMet, 2) + ' 直接套用只得 MEM ' + round(wrong, 1) +
+              '；週彙總 MEM = ' + round(wk.mem, 1) + '、高強度 ' + round(wk.vigMin, 1) + ' 分',
+      pass: round(t.minutes, 1) === 19 && round(t.vigMin, 1) === 5 && round(t.modMin, 1) === 14 &&
+            round(t.mem, 1) === 24 && round(t.metMin, 0) === 97 && round(wrong, 1) === 19 &&
+            round(wk.mem, 1) === 24 && round(wk.vigMin, 1) === 5 });
   })();
 
   // TC-16：交叉驗證——以速度合理性推翻票數較高但不可能的組合
@@ -2105,9 +2280,13 @@ function runSelfTests() {
   }
 
   function recRow(r) {
+    const seg = (r.segments && r.segments.length) ? segmentTotals(r.segments) : null;
     const c = classifyIntensity(r.met);
-    const badge = c === 'vigorous' ? 'Vigorous' : (c === 'moderate' ? 'Moderate' : 'Light');
-    const src = r.metSource === 'subjective' ? '<span class="tag">主觀判定</span>'
+    const badge = seg
+      ? '間歇（高強度 ' + round(seg.vigMin, 1) + ' 分 / 中強度 ' + round(seg.modMin, 1) + ' 分）'
+      : (c === 'vigorous' ? 'Vigorous' : (c === 'moderate' ? 'Moderate' : 'Light'));
+    const src = r.metSource === 'segments' ? '<span class="tag">課表分段</span>'
+      : r.metSource === 'subjective' ? '<span class="tag">主觀判定</span>'
       : (r.metSource === 'formula' ? '<span class="tag">公式</span>'
       : (r.metSource === 'weighted' ? '<span class="tag">泳姿加權</span>' : '<span class="tag">查表</span>'));
     const mus = (r.isStrength && r.muscles && r.muscles.length)
@@ -2119,8 +2298,8 @@ function runSelfTests() {
       '<div class="l"><b>' + esc(r.name) + '</b>' +
       '<span>' + esc(r.date) + ' · ' + round(r.minutes, 0) + ' 分 · MET ' + round(r.met, 2) + ' · ' + badge + ' ' + src + esc(mus) +
       (r.note ? ' · ' + esc(r.note) : '') + '</span></div>' +
-      '<div class="r"><div class="v">MEM ' + round(memContribution(r.met, r.minutes), 1) + '</div>' +
-      '<div class="v faint">' + round(metMinutes(r.met, r.minutes), 0) + ' MET-min</div>' +
+      '<div class="r"><div class="v">MEM ' + round(seg ? seg.mem : memContribution(r.met, r.minutes), 1) + '</div>' +
+      '<div class="v faint">' + round(seg ? seg.metMin : metMinutes(r.met, r.minutes), 0) + ' MET-min</div>' +
       (r.meta && r.meta.photo ? '<button class="photoflag" data-act="photo" title="檢視照片">📷 照片</button>' : '') +
       '<button class="linkbtn" data-act="edit">編輯</button><button class="linkbtn" data-act="del">刪除</button></div></div>';
   }
@@ -2192,6 +2371,35 @@ function runSelfTests() {
   }
 
   function currentActivity() { return findActivity($('fActivity').value); }
+
+  /** 由 HIIT 表單讀出課表參數 */
+  function readHiitPlan() {
+    const num = function (id, dflt) {
+      const v = Number($(id).value);
+      return isFinite(v) && v >= 0 ? v : dflt;
+    };
+    const d = CONFIG.hiit;
+    return {
+      warmupMin: num('hWarmMin', d.warmupMin), warmupMet: num('hWarmMet', d.warmupMet),
+      rounds: num('hRounds', d.rounds),
+      workSec: num('hWorkSec', d.workSec), workMet: num('hWorkMet', d.workMet),
+      restSec: num('hRestSec', d.restSec), restMet: num('hRestMet', d.restMet),
+      cooldownMin: num('hCoolMin', d.cooldownMin), cooldownMet: num('hCoolMet', d.cooldownMet)
+    };
+  }
+
+  /** 將預設或既有課表填回表單 */
+  function fillHiitForm(plan) {
+    const p = plan || CONFIG.hiit;
+    $('hWarmMin').value = p.warmupMin; $('hWarmMet').value = p.warmupMet;
+    $('hRounds').value = p.rounds;
+    $('hWorkSec').value = p.workSec;   $('hWorkMet').value = p.workMet;
+    $('hRestSec').value = p.restSec;   $('hRestMet').value = p.restMet;
+    $('hCoolMin').value = p.cooldownMin; $('hCoolMet').value = p.cooldownMet;
+  }
+
+  ['hWarmMin','hWarmMet','hRounds','hWorkSec','hWorkMet','hRestSec','hRestMet','hCoolMin','hCoolMet']
+    .forEach(function (id) { $(id).addEventListener('input', updatePreview); });
 
   /* ---------- 跑步機讀數：照片與距離時間換算 ---------- */
   let pendingPhoto = null;   // 目前表單上的照片（dataURL）
@@ -2889,6 +3097,7 @@ function runSelfTests() {
     $('modRun').classList.toggle('hidden', kind !== 'run');
     $('modSwim').classList.toggle('hidden', kind !== 'swim');
     $('modClimb').classList.toggle('hidden', !(a && a.climbHint));
+    $('modHiit').classList.toggle('hidden', kind !== 'hiit');
     $('modOverride').classList.toggle('hidden', !$('fOverride').checked);
     $('modStrength').classList.toggle('hidden', !$('fIsStrength').checked);
   }
@@ -2904,6 +3113,10 @@ function runSelfTests() {
     if (a.kind === 'run') {
       const sp = Number($('fSpeed').value);
       return { met: runningMET(sp), source: 'formula' };
+    }
+    if (a.kind === 'hiit') {
+      const t = segmentTotals(hiitSegments(readHiitPlan()));
+      return { met: t.avgMet, source: 'segments' };
     }
     if (a.kind === 'swim') {
       const parts = CONFIG.swimStrokes.map(function (s) { return { met: s.met, pct: swimPct[s.code] || 0 }; });
@@ -2950,6 +3163,29 @@ function runSelfTests() {
         ? '佔比總和 ' + round(total, 1) + '%' + (Math.abs(total - 100) > 0.01 ? '（非 100%，已自動正規化）' : '') +
           ' → 加權 MET = ' + round(weightedMET(CONFIG.swimStrokes.map(function (s) { return { met: s.met, pct: swimPct[s.code] || 0 }; })), 2)
         : '尚未輸入任何泳姿佔比。';
+    }
+
+    if (a && a.kind === 'hiit') {
+      const segs = hiitSegments(readHiitPlan());
+      const t = segmentTotals(segs);
+      const box = $('hiitDerived');
+      if (t.minutes > 0) {
+        $('fMinutes').value = round(t.minutes, 1);   // 時長由課表自動推得
+        box.classList.remove('hidden');
+        box.innerHTML = '總時長 <b>' + round(t.minutes, 1) + '</b> 分（高強度 <b>' + round(t.vigMin, 1) +
+          '</b> 分、中強度 <b>' + round(t.modMin, 1) + '</b> 分）　MEM 貢獻 <b>' + round(t.mem, 1) +
+          '</b>　MET-min <b>' + round(t.metMin, 0) + '</b>　平均 MET ' + round(t.avgMet, 2) +
+          '（僅供熱量估算，不用於強度判定）';
+        $('pvMet').textContent = round(t.avgMet, 2);
+        $('pvIntensity').textContent = t.vigMin > 0 ? '含 Vigorous 區段' : '依區段計算';
+        $('pvMem').textContent = round(t.mem, 1);
+        $('pvMetMin').textContent = round(t.metMin, 1);
+        $('pvExtra').textContent = '間歇訓練依各區段強度分別歸類　估計熱量 ' +
+          round(kcalOf(t.avgMet, settings.weightKg, t.minutes), 0) + ' kcal（gross 總消耗，±15–20%）';
+      } else {
+        box.classList.add('hidden');
+      }
+      return;
     }
 
     if (!(met > 0) || !(minutes > 0)) {
@@ -3039,6 +3275,7 @@ function runSelfTests() {
     $('fMinutes').value = '';
     $('fSpeed').value = ''; $('fPace').value = '';
     $('fDist').value = ''; $('fTime').value = '';
+    fillHiitForm(null); $('hiitDerived').classList.add('hidden');
     $('tmDerived').classList.add('hidden');
     setPhoto(null); $('filePhoto').value = '';
     $('fNote').value = '';
@@ -3067,6 +3304,7 @@ function runSelfTests() {
     selectedMuscles = {}; (r.muscles || []).forEach(function (m) { selectedMuscles[m] = true; });
     swimPct = {}; if (r.meta && r.meta.swimPct) Object.assign(swimPct, r.meta.swimPct);
     if (r.meta && r.meta.speedKmh) { $('fSpeed').value = r.meta.speedKmh; $('fPace').value = round(speedKmhToPace(r.meta.speedKmh), 2); }
+    fillHiitForm((r.meta && r.meta.hiitPlan) || null);
     $('fDist').value = (r.meta && r.meta.distanceKm) ? r.meta.distanceKm : '';
     $('fTime').value = (r.meta && r.meta.timeText) ? r.meta.timeText : '';
     $('tmDerived').classList.add('hidden');
@@ -3105,6 +3343,11 @@ function runSelfTests() {
       note: $('fNote').value.trim(),
       meta: {}
     };
+    if (a && a.kind === 'hiit') {
+      const plan = readHiitPlan();
+      obj.segments = hiitSegments(plan);            // 強度判定依區段，不用整場平均
+      obj.meta.hiitPlan = plan;
+    }
     if (a && a.kind === 'run') {
       obj.meta.speedKmh = Number($('fSpeed').value) || null;
       if (Number($('fDist').value) > 0) obj.meta.distanceKm = Number($('fDist').value);
@@ -3439,11 +3682,17 @@ function runSelfTests() {
     download('exercise-records-' + fmtDate(new Date()) + '.json', JSON.stringify(payload, null, 2), 'application/json');
   });
   $('btnExportCsv').addEventListener('click', function () {
-    const head = ['id', 'date', 'weekStart', 'activity', 'met', 'metSource', 'minutes', 'intensity', 'mem', 'metMin', 'kcal', 'isStrength', 'strengthModerate', 'muscles', 'note'];
+    const head = ['id', 'date', 'weekStart', 'activity', 'met', 'metSource', 'minutes', 'intensity',
+                  'vigorousMin', 'moderateMin', 'mem', 'metMin', 'kcal', 'isStrength', 'strengthModerate', 'muscles', 'note'];
     const q = function (v) { return '"' + String(v === null || v === undefined ? '' : v).replace(/"/g, '""') + '"'; };
     const rows = records.slice().sort(function (a, b) { return a.date < b.date ? -1 : 1; }).map(function (r) {
+      const sg = (r.segments && r.segments.length) ? segmentTotals(r.segments) : null;
       return [r.id, r.date, weekStartOf(r.date, settings.weekStart), r.name, round(r.met, 3), r.metSource, r.minutes,
-        classifyIntensity(r.met), round(memContribution(r.met, r.minutes), 2), round(metMinutes(r.met, r.minutes), 2),
+        sg ? 'interval' : classifyIntensity(r.met),
+        round(sg ? sg.vigMin : (classifyIntensity(r.met) === 'vigorous' ? r.minutes : 0), 2),
+        round(sg ? sg.modMin : (classifyIntensity(r.met) === 'moderate' ? r.minutes : 0), 2),
+        round(sg ? sg.mem : memContribution(r.met, r.minutes), 2),
+        round(sg ? sg.metMin : metMinutes(r.met, r.minutes), 2),
         round(kcalOf(r.met, settings.weightKg, r.minutes), 1), r.isStrength ? 1 : 0, r.strengthModerate ? 1 : 0,
         (r.muscles || []).join('|'), r.note || ''].map(q).join(',');
     });

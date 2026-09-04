@@ -75,10 +75,12 @@ npx http-server . -p 8080
 ### ② 新增紀錄
 
 - 日期、活動類別、時長（分鐘）
+- **38 個內建活動項目**，分 13 類：跑步、游泳、步行、自行車、攀岩、肌力、水域、間歇訓練、器械有氧、徒手訓練、球類、舞蹈與格鬥、低強度
 - 依類別動態顯示欄位：
   - **跑步** → 速度（km/hr）／配速（min/km）雙向連動，即時顯示由 ACSM 方程式算出的 MET
   - **跑步機讀數**（跑步專屬）→ 可拍照或匯入跑步機螢幕照片，填入**距離 + 時間**後自動換算速度、配速、時長與 MET；時間支援 `mm:ss`、`h:mm:ss` 與純分鐘數
-  - **自動辨識（OCR）** → 一鍵掃描整張照片自動抓出距離與時間（含單位），或手動框選；結果先顯示供確認才套用（見第 3.9 節）
+  - **自動辨識（OCR）** → 一鍵掃描整張照片自動抓出距離與時間（含單位），或手動框選；結果先顯示供確認才套用（見第 3.10 節）
+  - **HIIT／間歇訓練** → 輸入熱身、組數、高強度秒數與 MET、組間恢復、緩和，系統展開為區段逐一歸類，時長自動推得（見第 3.9 節）
   - **游泳** → 12 種泳姿佔比輸入的混合泳姿加權計算器 + 強制顯示的技術經濟性警語（可摺疊）
   - **肌力** → 7 大肌群多選 + 「強度 moderate 以上」勾選
 - **主觀強度覆寫**：talk test / RPE Borg 6–20 / RPE CR10；覆寫後之紀錄標註來源為「主觀判定」
@@ -117,7 +119,7 @@ App 內建的說明頁，可由「新增紀錄」各欄位旁的 **?** 按鈕直
 - 心率模組（選用，**預設摺疊**）：Tanaka HRmax、水中修正、Karvonen 目標心率
 - 自訂活動項目管理（名稱 + MET 值，存入 localStorage）
 - 資料匯出（JSON / CSV）、匯入（JSON）、清除
-- 驗收測試（TC-1 ~ TC-16）一鍵執行
+- 驗收測試（TC-1 ~ TC-17）一鍵執行
 - 來源、GRADE 說明與免責聲明固定區塊
 
 ---
@@ -214,7 +216,24 @@ speedFromDistanceTime(2.8, 17.2)     // → 9.767 km/hr
 
 **照片處理**：照片僅存於本機 `localStorage`，不上傳、不辨識。存檔前以 canvas 縮圖至最長邊 `CONFIG.photo.maxDimPx`（1200 px）並轉為 JPEG（品質 0.72）；實測 2.9 MB 的手機照片壓縮後約 106 KB（縮減 96%）。若 `localStorage` 配額不足，程式會**捨棄照片後重試儲存**，確保運動紀錄本身不會遺失，並以提示告知使用者。
 
-### 3.9 跑步機數字自動辨識（OCR）`[實作約定]`
+### 3.9 間歇訓練分段計算 `[實作約定]`
+
+指引以**分別累計各強度的分鐘數**判定達標（MEM = 中強度分鐘 + 2 × 高強度分鐘），而間歇訓練把高強度與恢復期交錯在一起。若先取整場平均 MET 再判定，高強度區段會被恢復期稀釋成中強度，MEM 遭低估。
+
+`hiitSegments()` 將課表展開為區段，`segmentTotals()` 逐段以自身強度歸類；`summarizeWeek()` 遇到帶 `segments` 的紀錄時改用區段結果。
+
+以「熱身 5 分（4 MET）+ 5 組（1 分 10 MET + 1 分 3 MET）+ 緩和 5 分（3 MET）」為例：
+
+| 計算方式 | 高強度 | 中強度 | MEM |
+|---|---|---|---|
+| **分段計算（本工具採用）** | 5 分 | 14 分 | **24** |
+| 整場平均 MET 5.11 直接套用 19 分 | — | 19 分 | 19（低估約 26%）|
+
+平均 MET 仍會顯示並用於熱量估算，但**不用於強度判定**。歷史紀錄標示「課表分段」並列出各強度分鐘數；CSV 匯出新增 `vigorousMin` / `moderateMin` 欄位。
+
+**預設值**：高強度 10 MET、恢復 3 MET，屬實作約定的起始值而非查表測量值。實測顯示 HIIT 的 work interval 可達 >90% HRmax、>84% VO₂max，故預設設在 vigorous 區間。Compendium 無「HIIT」對應代碼，WHO 2020 與 US PAG 2018 亦未提供間歇訓練的專屬換算規則。
+
+### 3.10 跑步機數字自動辨識（OCR）`[實作約定]`
 
 引擎為 Tesseract（開源），資源自行託管於 `vendor/ocr/`，**不呼叫任何外部 API，照片不會離開使用者裝置**。
 
@@ -260,7 +279,7 @@ speedFromDistanceTime(2.8, 17.2)     // → 9.767 km/hr
 - 載入與辨識均有 120 秒逾時保護
 - 任何失敗都只影響辨識，手動輸入與其餘功能不受影響
 
-### 3.10 游泳混合泳姿加權
+### 3.11 游泳混合泳姿加權
 
 ```
 weighted_MET = Σ (proportion_i × MET_i)
@@ -268,7 +287,7 @@ weighted_MET = Σ (proportion_i × MET_i)
 
 佔比總和非 100% 時自動正規化。
 
-### 3.11 熱量估算
+### 3.12 熱量估算
 
 ```javascript
 kcal = MET × weightKg × (durationMinutes / 60);
@@ -276,7 +295,7 @@ kcal = MET × weightKg × (durationMinutes / 60);
 
 MET 基礎之熱量計算對多數個體的準確度約 **±15–20%**，且為 **gross（總）消耗**而非 net（淨）消耗，不應作為體重管理之精確依據。
 
-### 3.12 心率模組
+### 3.13 心率模組
 
 ```javascript
 const hrMaxLand = 208 - 0.7 * age;              // Tanaka
@@ -286,7 +305,7 @@ const targetHR  = hrRest + intensityPercent * (hrMax - hrRest);   // Karvonen
 
 ---
 
-## 3.13 肌力訓練的計量方式與抱石歸屬（文獻查證）
+## 3.14 肌力訓練的計量方式與抱石歸屬（文獻查證）
 
 以下為針對「重量訓練是否需計算 MET」「一週兩次是否足夠」「抱石如何計次」三問題之查證結果，文獻均取自 PubMed。
 
@@ -344,6 +363,7 @@ const targetHR  = hrRest + intensityPercent * (hrMax - hrRest);   // Karvonen
 | `metMinutesBand` | MET-min 參考帶 `low` / `high` | 參考帶依據更新 |
 | `strength` | `minDays`、`muscleGroups`（7 組，含 id / 中文 / 英文）、GRADE 字串 | 肌群定義或天數建議調整 |
 | `running` | `minValidSpeedKmh`（ACSM 適用下限 8.0）／`maxPlausibleSpeedKmh`（合理速度上限 45） | ACSM 指引改版 |
+| `hiit` | HIIT 預設課表（熱身／組數／秒數／各段 MET） | 需調整預設課表時 |
 | `fontSizes` | 顯示字級選項（id / 中文名稱 / 倍率） | 需要更大字級或調整級距時 |
 | `photo` | `maxDimPx` / `jpegQuality`（跑步機照片縮圖參數） | 需調整儲存空間與畫質的取捨時 |
 | `ocr` | `basePath` / `percentiles` / `psmModes` / `upscale` / `detect` / `mileToKm`（辨識資源路徑、百分位門檻、自動偵測參數） | 辨識率不佳時可增減百分位組合 |
@@ -448,7 +468,7 @@ mem, metMin, kcal, isStrength, strengthModerate, muscles, note
 - **App 內**：開啟 `index.html` → 設定 → 「執行自我測試」，結果以表格呈現
 - **Node**：抽出 `CORE` 區塊後呼叫 `runSelfTests()`（無需任何相依套件）
 
-**執行結果：16 / 16 通過**（於 Node 22 與 Chromium 兩種環境執行，結果一致）
+**執行結果：17 / 17 通過**（於 Node 22 與 Chromium 兩種環境執行，結果一致）
 
 | 案例 | 說明 | 期望值 | 實際執行結果 | 判定 |
 |---|---|---|---|---|
@@ -461,6 +481,7 @@ mem, metMin, kcal, isStrength, strengthModerate, muscles, note
 | **TC-7** | MEM 閾值邊界 | 149 → 未達標；150 → 基本達標；300 → 基本達標；301 → 額外效益 | **未達標 / 基本達標 / 基本達標 / 額外效益** | ✅ PASS |
 | **TC-8** | 肌群覆蓋（週一腿髖背、週四胸肩臂） | 天數達標（2 天）但腹部未覆蓋 → 肌力未達標，UI 標示缺漏肌群 | 天數 = **2**（達標）、缺漏肌群 = **腹部** → 肌力**未達標**；儀表板 7 格覆蓋圖中腹部呈灰階，並顯示「缺漏肌群：腹部（訓練天數已達標）」 | ✅ PASS |
 | **TC-9** | 短時長活動（快走 6.4 km/hr，MET 5.0，7 分鐘） | 正常計入，MEM 貢獻 = 7（不得因 <10 分鐘而排除） | MEM 貢獻 = **7**（moderate，MET-min = 35） | ✅ PASS |
+| **TC-17** | 間歇訓練分段計算（HIIT 5×(1 分 10 MET + 1 分 3 MET)） | 總時長 19 分、高強度 5 分、中強度 14 分、MEM 24、MET-min 97；整場平均 MET 5.11 直接套用只得 MEM 19；週彙總須採區段結果 | 總時長 **19** 分、高強度 **5** 分、中強度 **14** 分、MEM **24**、MET-min **97**；平均 MET 5.11 直接套用只得 MEM **19**；週彙總 MEM **24**、高強度 **5** 分 | ✅ PASS |
 | **TC-16** | 交叉驗證（票數最高者若物理上不可能則排除） | 距離候選 28（2 票）／2.8（1 票）搭配時間 17:12 → 選出 2.8；無可行組合 → null | 選出距離 **2.8**、時間 **17:12**（**9.8 km/hr**）；無可行組合時回傳 **null** | ✅ PASS |
 | **TC-15** | 速度合理性攔阻（上限 45 km/hr） | 正確讀數通過；誤讀成 28 km / 1.2 分（1400 km/hr）攔下；0 攔下；45 邊界通過 | 正確讀數**通過**；誤讀**攔下**（tooFast）；0 **攔下**；邊界 45 **通過** | ✅ PASS |
 | **TC-14** | 讀數分類、單位換算與百分位門檻 | 10 種讀數全部正確歸類（含 1.5mi→2.41km、0m 判為高度、206 不當距離）；均勻分布第 50/99 百分位 ≈ 127/253 | 10 種讀數**全部正確**；第 50 百分位 **127**、第 99 百分位 **253** | ✅ PASS |
@@ -542,6 +563,7 @@ Karvonen(rest 60, 60% HRR)   = 134.1 bpm
 - Coleman CJ, McDonough DJ, Pope ZC, Pope CA. Dose-response association of aerobic and muscle-strengthening physical activity with mortality: a national cohort study of 416 420 US adults. *Br J Sports Med.* 2022. [DOI: 10.1136/bjsports-2022-105519](https://doi.org/10.1136/bjsports-2022-105519)
 - Schoenfeld BJ, Ogborn D, Krieger JW. Effects of Resistance Training Frequency on Measures of Muscle Hypertrophy: A Systematic Review and Meta-Analysis. *Sports Med.* 2016;46(11):1689-1697. [DOI: 10.1007/s40279-016-0543-8](https://doi.org/10.1007/s40279-016-0543-8)
 - Grgic J, Schoenfeld BJ, Davies TB, Lazinica B, Krieger JW, Pedisic Z. Effect of Resistance Training Frequency on Gains in Muscular Strength: A Systematic Review and Meta-Analysis. *Sports Med.* 2018;48(5):1207-1220. [DOI: 10.1007/s40279-018-0872-x](https://doi.org/10.1007/s40279-018-0872-x)
+- Stöggl TL, Schwarzl C, Müller EE, Nagasaki M, Stöggl J, Schönfelder M, Niebauer J. Alpine Skiing as Winter-Time High-Intensity Training. *Med Sci Sports Exerc.* 2017;49(9):1859-1867. [DOI: 10.1249/MSS.0000000000001289](https://doi.org/10.1249/MSS.0000000000001289)
 - Callender NA, Hayes TN, Tiller NB. Cardiorespiratory demands of competitive rock climbing. *Appl Physiol Nutr Metab.* 2021;46(2):161-168. [DOI: 10.1139/apnm-2020-0566](https://doi.org/10.1139/apnm-2020-0566)
 - Langer K, Simon C, Wiemeyer J. Strength Training in Climbing: A Systematic Review. *J Strength Cond Res.* 2023;37(3):751-767. [DOI: 10.1519/JSC.0000000000004286](https://doi.org/10.1519/JSC.0000000000004286)
 - MacLean KFE, Dickerson CR. Kinematic and EMG analysis of horizontal bimanual climbing in humans. *J Biomech.* 2019;92:11-18. [DOI: 10.1016/j.jbiomech.2019.05.023](https://doi.org/10.1016/j.jbiomech.2019.05.023)
@@ -572,6 +594,8 @@ Karvonen(rest 60, 60% HRR)   = 134.1 bpm
 - **肌力訓練的最佳劑量**：provided sources 未提供以健康結果（而非肌力／肥大）為終點的最佳組數與反覆次數。指引本身亦未規定組數、次數或時長。
 - **頻率與訓練量的拆分**：現有統合分析多以未訓練者為受試對象，已有訓練經驗者的證據仍不足。
 - **年齡推估 HRmax 的個人準確度**：現有公式（含 Tanaka）平均偏誤雖小（−3 至 +6 bpm），但一致性界限寬達約 ±18–24 bpm，無任何公式具備高度個人層級準確度。不同大型研究給出的公式亦不相同（Tanaka `208 − 0.7×年齡` vs HUNT `211 − 0.64×年齡`，40 歲時差 5 bpm）。**本工具不對這些公式取平均**，採用 Tanaka 並於說明中並列各來源數值。provided sources 未提供可靠的個人化校正方法。
+- **新增活動項目的 MET 值**：游泳項目附有 Compendium 代碼（由規格提供）；本次新增的 24 個項目採 Compendium 廣泛引用之數值，但**未逐一核對 2024 版的代碼與小數位**。這些值足以用於達標判定（誤差方向與門檻同源），若需精確值應查核後以自訂項目覆蓋。
+- **間歇訓練的官方換算規則**：provided sources 未提供間歇訓練的專屬換算方法，Compendium 亦無「HIIT」對應代碼。本工具的分段計算為實作約定，其依據是指引「分別累計各強度分鐘數」的計量方式。
 - **時效性**：指引與 Compendium 均會改版。CONFIG 中所有常數須註記版本年份，建議每 2 年重新查核。
 - **個別化**：本工具為一般性計算，不取代個別臨床評估。
 
