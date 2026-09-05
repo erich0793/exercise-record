@@ -129,13 +129,14 @@ App 內建的說明頁，可由「新增紀錄」各欄位旁的 **?** 按鈕直
 
 ### 3.1 強度分級（absolute intensity, MET-based）`[參考測量值]`
 
-| 分級 | MET 範圍 |
-|---|---|
-| Light | 1.6 – 2.9 |
-| Moderate | 3.0 – 5.9 |
-| Vigorous | ≥ 6.0 |
+| 分級 | MET 範圍 | 計入 MEM |
+|---|---|---|
+| Sedentary | < 1.6 | 否 |
+| Light | 1.6 – 2.9 | 否 |
+| Moderate | 3.0 – 5.9 | 1 倍 |
+| Vigorous | ≥ 6.0 | 2 倍 |
 
-分級由 MET 值自動判定，邊界為 `MET >= 6.0` 判為 vigorous。
+分級由 MET 值自動判定，各邊界皆為「含」（`3.0` 判 moderate、`6.0` 判 vigorous、`1.6` 判 light）。Sedentary 與 Light 同樣不計入 MEM，區分兩者是為了與 Compendium 的分級一致——坐著休息（1.3 MET）不應顯示為「輕度活動」。
 
 ### 3.2 等效換算 `[指引慣例]`
 
@@ -546,6 +547,25 @@ Karvonen(rest 60, 60% HRR)   = 134.1 bpm
 
 ---
 
+## 7.1 全面稽核紀錄
+
+對全站計算層執行 **131 項自動稽核**（`audit.js`），涵蓋：分級邊界、MEM 換算、有氧達標門檻、跑步方程式、熱量與 MET-min、分段計算、肌力判定、燈號邏輯、週界與日期（含跨年與閏年）、心率公式、游泳加權、RPE 對照、跑步機換算與單位、讀數分類、達標軌跡、強度選單、活動清單完整性、跨函式一致性。**結果：131 / 131 通過。**
+
+關鍵的跨函式恆等式亦納入驗證：
+
+- `週 MEM = Σ 逐筆 MEM`、`週 MET-min = Σ 逐筆 MET-min`
+- `MEM = 中強度分鐘 + 2 × 高強度分鐘`（一般紀錄與分段紀錄皆須滿足）
+- 分段紀錄的熱量（`avgMet × 總時長`）須等於逐段加總
+- 有氧 1200 MEM 但無肌力訓練時**仍不得亮綠燈**
+
+### 稽核發現並修正之項目
+
+| # | 發現 | 影響 | 處置 |
+|---|---|---|---|
+| ① | `CONFIG.intensity.lightMin`（1.6）已宣告且列於說明表格，但分級函式未使用——所有 <3.0 MET 一律歸為 Light，導致坐著休息（1.3）被標示為「輕度活動」 | **不影響任何計算結果**（兩者同樣不計入 MEM），僅為標示不精確 | 新增 `sedentary` 分級，四級與 Compendium 一致 |
+| ② | Tanaka 2001 與 DiCarlo 1991 自專案建立以來從未獨立覆核（數值取自原始規格書） | — | 首次於 PubMed 覆核，**數值全部吻合**；並發現 −12 bpm 為原論文明確建議之修正值，而非本工具取的中間值，已更正說明使其可追溯 |
+| ③ | 「菁英游泳者陸／水 HRmax 差距約 6.7 ± 5.3 bpm」（來自原始規格書）於 PubMed **無法查證** | 該數字僅出現於限制說明，不參與計算 | 移除該數值，改以可查證的替代證據（Rodríguez 2000：競技游泳者游泳心率較低而 VO₂peak 相當）呈現同方向結論，並將原數值列入證據缺口 |
+
 ## 8. 來源
 
 **建議量來源**
@@ -575,6 +595,9 @@ Karvonen(rest 60, 60% HRR)   = 134.1 bpm
 
 **心率公式之準確度**
 
+- Tanaka H, Monahan KD, Seals DR. Age-predicted maximal heart rate revisited. *J Am Coll Cardiol.* 2001;37(1):153-6. [DOI: 10.1016/s0735-1097(00)01054-8](https://doi.org/10.1016/s0735-1097(00)01054-8) — 統合 351 篇研究／18,712 人，`208 − 0.7 × 年齡`，r = −0.90
+- DiCarlo LJ, Sparling PB, Millard-Stafford ML, Rupp JC. Peak heart rates during maximal running and swimming: implications for exercise prescription. *Int J Sports Med.* 1991;12(3):309-12. [DOI: 10.1055/s-2007-1024687](https://doi.org/10.1055/s-2007-1024687) — n=34，游泳峰值心率較年齡推估低 13 bpm、較跑步低 11 bpm，血乳酸 8.0 vs 8.1 mmol/L；**原文建議減 12 bpm**
+- Rodríguez FA. Maximal oxygen uptake and cardiorespiratory response to maximal 400-m free swimming, running and cycling tests in competitive swimmers. *J Sports Med Phys Fitness.* 2000;40(2):87-95.（PMID 11034427）— 競技游泳者游泳心率較低而 VO₂peak 相當
 - Nes BM, Janszky I, Wisløff U, Støylen A, Karlsen T. Age-predicted maximal heart rate in healthy subjects: The HUNT fitness study. *Scand J Med Sci Sports.* 2013;23(6):697-704. [DOI: 10.1111/j.1600-0838.2012.01445.x](https://doi.org/10.1111/j.1600-0838.2012.01445.x)
 - Martin J, Lindsey B, Gerrity C, Ambegaonkar J. Exploratory analysis of the accuracy of age-based maximal heart rate equations across cardiorespiratory fitness levels. *PLoS One.* 2025;20(10):e0335842. [DOI: 10.1371/journal.pone.0335842](https://doi.org/10.1371/journal.pone.0335842)
 
@@ -622,6 +645,7 @@ Karvonen(rest 60, 60% HRR)   = 134.1 bpm
 - **新增活動項目的 MET 值**：游泳項目附有 Compendium 代碼（由規格提供）；本次新增的 24 個項目採 Compendium 廣泛引用之數值，但**未逐一核對 2024 版的代碼與小數位**。這些值足以用於達標判定（誤差方向與門檻同源），若需精確值應查核後以自訂項目覆蓋。
 - **talk test 的效力**：文獻結論分歧（見上），且回顧明確指出可能不適用於 HIIT。provided sources 未提供標準化與非標準化操作差異的量化比較。
 - **間歇訓練的官方換算規則**：provided sources 未提供間歇訓練的專屬換算方法，Compendium 亦無「HIIT」對應代碼。本工具的分段計算為實作約定，其依據是指引「分別累計各強度分鐘數」的計量方式。
+- **菁英游泳者陸／水 HRmax 差距的具體數值**：原始規格書列出「約 6.7 ± 5.3 bpm」，本工具於 PubMed 覆核時**未能找到支持該數值的文獻**，已自說明中移除。provided sources 未提供可直接套用的族群別修正值。
 - **時效性**：指引與 Compendium 均會改版。CONFIG 中所有常數須註記版本年份，建議每 2 年重新查核。
 - **個別化**：本工具為一般性計算，不取代個別臨床評估。
 

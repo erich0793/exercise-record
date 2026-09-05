@@ -772,6 +772,15 @@ svg.chart{width:100%;height:auto;display:block}
       <h4 id="h-theory-2">二、MET：所有換算的起點</h4>
       <p><strong>MET（metabolic equivalent of task，代謝當量）</strong>是把各種活動的能量成本表達成「靜息代謝率的幾倍」的單位。定義上：</p>
       <p style="font-family:var(--mono);font-size:calc(12.5px * var(--fs))">1 MET = 3.5 mL O₂ / kg / min　→　MET = VO₂ ÷ 3.5</p>
+      <table class="tt">
+        <thead><tr><th>分級</th><th>MET</th><th>計入 MEM</th></tr></thead>
+        <tbody>
+          <tr><td>Sedentary（久坐等級）</td><td>&lt; 1.6</td><td>否</td></tr>
+          <tr><td>Light（輕度）</td><td>1.6 – 2.9</td><td>否</td></tr>
+          <tr><td>Moderate（中強度）</td><td>3.0 – 5.9</td><td>1 倍</td></tr>
+          <tr><td>Vigorous（高強度）</td><td>≥ 6.0</td><td>2 倍</td></tr>
+        </tbody>
+      </table>
       <p>之所以用 <strong>mL/kg/min</strong>（每公斤體重）而非絕對耗氧量，是因為能量成本大致與體重成正比。除以體重之後，同一個動作對不同體型的人可以用同一個數字表示——這是 MET 能成為通用單位的原因，也是熱量公式 <code>kcal = MET × 體重 × 時數</code> 要把體重乘回去的原因。</p>
       <p><strong>跑步為什麼能用公式而不查表</strong>：平地跑步的耗氧量與速度呈線性關係，ACSM 代謝方程式即為此線性關係——</p>
       <p style="font-family:var(--mono);font-size:calc(12.5px * var(--fs))">VO₂ = 0.2 × 速度(m/min) + 3.5</p>
@@ -875,7 +884,9 @@ svg.chart{width:100%;height:auto;display:block}
       <p class="src"><span class="tag grade">GRADE: Moderate</span>（大樣本橫斷實測研究，n=3,320）出處：Nes BM, Janszky I, Wisløff U, Støylen A, Karlsen T. Age-predicted maximal heart rate in healthy subjects: The HUNT fitness study. <em>Scand J Med Sci Sports.</em> 2013;23(6):697-704. 取自 PubMed，<a href="https://doi.org/10.1111/j.1600-0838.2012.01445.x" target="_blank" rel="noopener">DOI: 10.1111/j.1600-0838.2012.01445.x</a></p>
 
       <p>游泳另需修正：水中的最大心率低於陸上，若直接套用陸上區間會系統性低估游泳強度。詳見「設定 → 心率模組」內的說明與其證據限制（<span class="tag grade">GRADE: Low</span>）。</p>
-      <p class="src">出處：Tanaka H, et al. <em>J Am Coll Cardiol.</em> 2001；DiCarlo LJ, et al. <em>Int J Sports Med.</em> 1991;12(3):309-12。</p>
+      <p class="src"><span class="tag grade">GRADE: Moderate</span>（統合分析 351 篇研究、492 組、18,712 人，r = −0.90，另於 514 人實驗室研究交叉驗證得 209 − 0.7 × 年齡）出處：Tanaka H, Monahan KD, Seals DR. Age-predicted maximal heart rate revisited. <em>J Am Coll Cardiol.</em> 2001;37(1):153-6. 取自 PubMed，<a href="https://doi.org/10.1016/s0735-1097(00)01054-8" target="_blank" rel="noopener">DOI: 10.1016/s0735-1097(00)01054-8</a></p>
+      <p class="src"><span class="tag grade">GRADE: Low</span>（單一橫斷研究，n=34，tethered swimming）出處：DiCarlo LJ, Sparling PB, Millard-Stafford ML, Rupp JC. Peak heart rates during maximal running and swimming: implications for exercise prescription. <em>Int J Sports Med.</em> 1991;12(3):309-12. 取自 PubMed，<a href="https://doi.org/10.1055/s-2007-1024687" target="_blank" rel="noopener">DOI: 10.1055/s-2007-1024687</a></p>
+      <p class="src"><span class="tag grade">GRADE: Low</span>（比較性驗證研究，n=15 及 n=33 競技游泳者）出處：Rodríguez FA. Maximal oxygen uptake and cardiorespiratory response to maximal 400-m free swimming, running and cycling tests in competitive swimmers. <em>J Sports Med Phys Fitness.</em> 2000;40(2):87-95. 取自 PubMed（PMID 11034427）。</p>
 
       <h4 id="h-theory-10">十、總結：這個工具能與不能回答什麼</h4>
       <table class="tt">
@@ -1151,6 +1162,7 @@ svg.chart{width:100%;height:auto;display:block}
         <li><strong>混合泳姿之 MET</strong>：provided sources 未提供官方加權方法。本工具採線性加權為<code>[實作約定]</code>。</li>
         <li><strong>報酬遞減轉折點</strong>：WHO 指出風險下降在超過每週 300 分鐘後趨於平緩，但證據不足以指出確切轉折點。本工具不對 &gt;300 MEM 做任何效益外推。</li>
         <li><strong>1 MET = 3.5 mL/kg/min 的約定</strong>：此值源自單一受試者，已知系統性高估實際靜息代謝率（平均 35%，以熱量計約 10–30% 依族群而異）。provided sources 未提供可直接套用的個人化校正係數，本工具<strong>不對此做數值修正</strong>，僅於熱量估算標示誤差範圍。</li>
+        <li><strong>菁英游泳者陸／水 HRmax 差距的具體數值</strong>：原始規格書列出「約 6.7 ± 5.3 bpm」，本工具於 PubMed 覆核時<strong>未能找到支持該數值的文獻</strong>，故已將其自說明中移除，改以可查證的替代證據（受過訓練的競技游泳者游泳心率較低而 VO₂peak 相當）呈現同一方向的結論。provided sources 未提供可直接套用的族群別修正值。</li>
         <li><strong>年齡推估 HRmax 的個人準確度</strong>：現有公式（含 Tanaka）平均偏誤雖小，但一致性界限寬達約 ±18–24 bpm，無任何公式具備高度個人層級準確度。不同大型研究給出的公式亦不相同（Tanaka 208 − 0.7×年齡 vs HUNT 211 − 0.64×年齡）。<strong>本工具不對這些公式取平均</strong>，採用 Tanaka 並於說明中並列各來源數值。provided sources 未提供可靠的個人化校正方法。</li>
         <li><strong>靜息代謝率的族群差異</strong>：實測靜息 VO₂ 因族群而異（異質樣本 2.6 vs 年輕健康男性 3.21 mL/kg/min），3.5 的高估幅度介於約 9–35%。<strong>本工具不對這些數值取平均</strong>，亦不提供個人化校正。</li>
         <li><strong>時效性</strong>：指引與 Compendium 均會改版，建議每 2 年重新查核。</li>
@@ -1158,6 +1170,7 @@ svg.chart{width:100%;height:auto;display:block}
       </ul>
       <p class="src">所有 PubMed 文獻引用均取自 PubMed 資料庫，並附原始文章 DOI 連結。</p>
       <p class="src"><strong>覆核紀錄</strong>：本頁數值曾經外部專業人士審閱，並於審閱後逐篇對照 PubMed 原始摘要重新核對。經覆核之具體數值包括 Byrne 2005（2.6 ± 0.4 mL/kg/min、35%、62%/14%）、McMurray 2014（0.863 kcal/kg/hr、95% CI 0.852–0.874、10%/15%/20–30%）、Coleman 2022（HR 0.85／0.73／0.89／0.99 及其信賴區間）、Tarasenko 2018（HR 0.37–0.64／0.76–0.94），均與原始摘要一致。審閱意見促成之修正：補充 HRmax 公式的個人準確度限制與 HUNT 並列公式、改以 50 萬人世代研究作為有氧與肌力不可折抵之主要證據、並將靜息代謝率之高估幅度改以族群區間並列呈現。</p>
+      <p class="src"><strong>全面稽核紀錄</strong>：另對全站計算層執行 131 項自動稽核（分級邊界、MEM 換算、達標門檻、跑步方程式、熱量與 MET-min、分段計算、肌力判定、燈號邏輯、週界與日期、心率公式、游泳加權、RPE、跑步機換算、讀數分類、達標軌跡、強度選單、活動清單完整性、跨函式一致性），全數通過。稽核發現並修正之項目：<strong>①</strong> <code>CONFIG.intensity.lightMin</code>（1.6）雖已宣告且列於說明表格，分級函式卻未使用，導致久坐等級（&lt;1.6 MET，如坐著休息 1.3）被標示為 Light；已新增 sedentary 分級（兩者同樣不計入 MEM，故不影響任何既有計算結果）。<strong>②</strong> Tanaka 2001 與 DiCarlo 1991 首次於 PubMed 獨立覆核，數值全部吻合，並發現 −12 bpm 為原論文明確建議之修正值而非取中間值，已更正說明。<strong>③</strong> 「菁英游泳者 6.7 ± 5.3 bpm」無法查證，已移除並改列於證據缺口。</p>
     </div>
   </section>
 
@@ -1204,7 +1217,8 @@ svg.chart{width:100%;height:auto;display:block}
           </div>
           <div class="callout">
             <strong>說明</strong>：DiCarlo 等（1991）發現 tethered swimming 之 peak HR 較年齡預測值低 13 bpm、較跑步機低 11 bpm，但兩者運動後血乳酸相當（8.0 vs 8.1 mmol/L），代表<strong>代謝負荷相同而心率較低</strong>。若直接套用陸上心率區間，將系統性低估游泳強度。<br>
-            <strong>限制</strong>：菁英游泳者的陸／水 HRmax 差距可能僅約 6.7 ± 5.3 bpm，個體差異大。腕式光學心率感測器在水中可靠性差。此外，年齡推估的 HRmax 本身即無個人層級準確度（一致性界限約 ±18–24 bpm），故以下數值僅為粗略參考，不應作為精確處方。此修正之證據等級 <span class="tag grade">GRADE: Low</span>（單一橫斷性研究，n=34）。本工具不對各來源數值取平均，預設 −12 bpm 並開放調整。
+            <strong>−12 的由來</strong>：這不是取中間值，而是<strong>該研究作者的明確建議</strong>——原文建議將跑步機測得或年齡推估的 HRmax「減 12 bpm」作為游泳 HRmax 的合理估計。<br>
+            <strong>限制</strong>：受試者為大學年齡的健身游泳者（n=34），且採 tethered swimming（繫繩定點游泳），未必推及一般泳者與自由游進。另有研究在受過訓練的競技游泳者身上發現，400 公尺自由式的 VO₂peak 與跑步、騎車相當甚至略高，但<strong>心率仍較低</strong>——方向一致，惟該研究未提供可直接套用的修正數值。個體差異大，腕式光學心率感測器在水中可靠性亦差。此外，年齡推估的 HRmax 本身即無個人層級準確度（一致性界限約 ±18–24 bpm），故以下數值僅為粗略參考，不應作為精確處方。此修正之證據等級 <span class="tag grade">GRADE: Low</span>（單一橫斷性研究，n=34）。本工具不對各來源數值取平均，預設 −12 bpm 並開放調整。
           </div>
         </div>
       </details>
@@ -1711,10 +1725,12 @@ function runningSpeedCheck(speedKmh) {
 function classifyIntensity(met) {
   if (met >= CONFIG.intensity.vigorousMin) return 'vigorous';
   if (met >= CONFIG.intensity.moderateMin) return 'moderate';
-  return 'light';
+  if (met >= CONFIG.intensity.lightMin) return 'light';
+  return 'sedentary';                       // < 1.6 MET：久坐等級，與 light 同樣不計入 MEM
 }
 
-const INTENSITY_ZH = { light: 'Light（輕度）', moderate: 'Moderate（中強度）', vigorous: 'Vigorous（高強度）' };
+const INTENSITY_ZH = { sedentary: 'Sedentary（久坐等級）', light: 'Light（輕度）',
+                       moderate: 'Moderate（中強度）', vigorous: 'Vigorous（高強度）' };
 
 /** 3.2 單筆活動之 MEM 貢獻：moderate 計 1×、vigorous 計 2×、light 不計 */
 function memContribution(met, minutes) {
@@ -2467,7 +2483,8 @@ function runSelfTests() {
     const c = classifyIntensity(r.met);
     const badge = seg
       ? '間歇（高強度 ' + round(seg.vigMin, 1) + ' 分 / 中強度 ' + round(seg.modMin, 1) + ' 分）'
-      : (c === 'vigorous' ? 'Vigorous' : (c === 'moderate' ? 'Moderate' : 'Light'));
+      : (c === 'vigorous' ? 'Vigorous' : c === 'moderate' ? 'Moderate'
+                                        : c === 'light' ? 'Light' : 'Sedentary');
     const src = r.metSource === 'segments' ? '<span class="tag">課表分段</span>'
       : r.metSource === 'subjective' ? '<span class="tag">主觀判定</span>'
       : (r.metSource === 'formula' ? '<span class="tag">公式</span>'
@@ -2588,7 +2605,8 @@ function runSelfTests() {
   function buildHiitPresets() {
     const fill = function (selId, metId, presets) {
       // 選項直接標示強度分級，使用者一眼看出這段計不計入 MEM
-      const clsZh = { light: 'light・不計入', moderate: 'moderate', vigorous: 'vigorous・計 2 倍' };
+      const clsZh = { sedentary: 'sedentary・不計入', light: 'light・不計入',
+                    moderate: 'moderate', vigorous: 'vigorous・計 2 倍' };
       $(selId).innerHTML = '<option value="">— 自行輸入 MET —</option>' +
         presets.map(function (p, i) {
           const m = presetMet(p);
@@ -3410,7 +3428,7 @@ function runSelfTests() {
     $('pvMem').textContent = round(memContribution(met, minutes), 1);
     $('pvMetMin').textContent = round(metMinutes(met, minutes), 1);
     $('pvExtra').textContent = INTENSITY_ZH[c] + '　估計熱量 ' + round(kcalOf(met, settings.weightKg, minutes), 0) +
-      ' kcal（gross 總消耗，±15–20%）' + (c === 'light' ? '　※ 輕度活動不計入 MEM' : '') +
+      ' kcal（gross 總消耗，±15–20%）' + (c === 'light' || c === 'sedentary' ? '　※ 此強度不計入 MEM' : '') +
       (r.source === 'subjective' ? '　※ MET 來源：主觀判定' : '');
   }
 
