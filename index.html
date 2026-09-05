@@ -536,6 +536,10 @@ svg.chart{width:100%;height:auto;display:block}
         </div>
         <div class="tmpanel">
           <label>課表結構</label>
+          <div class="field" style="margin-bottom:8px">
+            <label for="hWarmPreset">熱身做什麼</label>
+            <select id="hWarmPreset"></select>
+          </div>
           <div class="grid2">
             <div class="field" style="margin-bottom:8px"><label for="hWarmMin">熱身（分鐘）</label>
               <input type="number" id="hWarmMin" min="0" step="1" inputmode="numeric"></div>
@@ -568,10 +572,15 @@ svg.chart{width:100%;height:auto;display:block}
             <div class="field" style="margin-bottom:8px"><label for="hCoolMin">緩和（分鐘）</label>
               <input type="number" id="hCoolMin" min="0" step="1" inputmode="numeric"></div>
           </div>
+          <div class="field" style="margin-bottom:8px">
+            <label for="hCoolPreset">緩和做什麼</label>
+            <select id="hCoolPreset"></select>
+          </div>
           <div class="field" style="margin-bottom:0"><label for="hCoolMet">緩和 MET</label>
             <input type="number" id="hCoolMet" min="0" step="0.1" inputmode="decimal"></div>
           <p class="faint" style="margin:8px 0 0">
-            不確定 MET 填多少？<strong>選上面的動作即可自動帶入</strong>，不需要自己猜。
+            不確定 MET 填多少？<strong>四個選單挑你實際做的事即可自動帶入</strong>，不需要自己猜。
+            選項已標示強度分級：light 不計入 MEM、vigorous 計 2 倍。
             <button type="button" class="helpbtn" data-help="h-howmet" aria-label="如何知道 MET">?</button>
           </p>
           <p class="derived hidden" id="hiitDerived"></p>
@@ -973,6 +982,30 @@ svg.chart{width:100%;height:auto;display:block}
       <p><strong>MET 該填多少</strong>：<strong>用「高強度做什麼動作」選單</strong>——選衝刺跑、跳繩、波比跳等，系統自動帶入 MET，不需自行判斷。恢復段同理（慢走、站著休息、坐著休息⋯⋯）。</p>
       <p>預設值高強度 10、恢復 3 屬<code>[實作約定]</code>的起始值而非查表測量值。實測顯示 HIIT 的 work interval 可達 <strong>&gt;90% HRmax、&gt;84% VO₂max</strong>，故預設設在 vigorous 區間；若你的間歇是快走與慢跑交替，高強度段應調低。</p>
       <p>注意：<strong>talk test 不適用於 HIIT</strong>（衝刺中無法測試說話），詳見<a href="#h-howmet">「MET 到底怎麼知道」</a>。</p>
+
+      <h4 id="h-warmcool">熱身與緩和的 MET 怎麼估</h4>
+      <p>同樣<strong>用選單挑你實際做的事</strong>即可，不需自己判斷數值。「熱身做什麼」與「緩和做什麼」兩個選單會自動帶入 MET。</p>
+      <p><strong>關鍵觀念：熱身與緩和只要達 moderate 以上，就一樣計入 MEM。</strong>2018 PAG 已取消「單次至少 10 分鐘」的限制，所以 5 分鐘的快走熱身（4.3 MET）會完整計入 5 個 MEM，不是零。</p>
+      <p>但強度差異很大，選單已直接標示分級：</p>
+      <table class="tt">
+        <thead><tr><th>常見做法</th><th>MET</th><th>計入方式</th></tr></thead>
+        <tbody>
+          <tr><td>慢跑熱身（約 8 km/hr）</td><td>8.6</td><td><b>vigorous・計 2 倍</b></td></tr>
+          <tr><td>輕鬆騎車／飛輪</td><td>6.8</td><td><b>vigorous・計 2 倍</b></td></tr>
+          <tr><td>快走（6.4 km/hr）</td><td>5.0</td><td>moderate・計入</td></tr>
+          <tr><td>快走（5.6 km/hr）</td><td>4.3</td><td>moderate・計入</td></tr>
+          <tr><td>徒手熱身操（開合跳等）</td><td>3.8</td><td>moderate・計入</td></tr>
+          <tr><td>慢走、動態／靜態伸展</td><td>2.3–2.8</td><td>light・<b>不計入 MEM</b></td></tr>
+          <tr><td>站著休息</td><td>1.8</td><td>light・<b>不計入 MEM</b></td></tr>
+        </tbody>
+      </table>
+      <div class="verdict">
+        <b>兩個容易搞錯的地方</b>
+        <strong>① 慢跑熱身其實是 vigorous。</strong>8 km/hr 的「輕鬆慢跑」MET 為 8.6，超過 6.0 的門檻，會以 2 倍計入。這不是錯誤——依絕對強度分級它確實屬於高強度，只是主觀上不覺得而已。<br>
+        <strong>② 伸展不會增加 MEM。</strong>靜態伸展約 2.3 MET 屬 light，對達標判定沒有貢獻（但仍計入 MET-min 與熱量）。伸展的價值在柔軟度與恢復，不在有氧達標。
+      </div>
+      <p><strong>不確定就往低估的方向填</strong>：高估強度會虛增 MEM，讓你以為達標了其實沒有；低估則只是保守一點。若熱身內容混雜（先走再慢跑），選較接近整段平均的那一項，或乾脆把熱身分鐘數設為 0、只記錄主課表。</p>
+      <p class="src"><code>[指引慣例]</code> 任何時長的 moderate 以上活動皆全數計入，出處：US Physical Activity Guidelines for Americans, 2nd ed. (2018)。分級門檻見「整體運動建議與醫學理論」第一、四節。</p>
       <p class="src"><span class="tag grade">GRADE: Low</span>（單一交叉設計研究，n=19，含滑雪／越野滑雪／室內單車三種模式）出處：Stöggl TL, Schwarzl C, Müller EE, et al. Alpine Skiing as Winter-Time High-Intensity Training. <em>Med Sci Sports Exerc.</em> 2017;49(9):1859-1867. 取自 PubMed，<a href="https://doi.org/10.1249/MSS.0000000000001289" target="_blank" rel="noopener">DOI: 10.1249/MSS.0000000000001289</a></p>
       <p class="src"><code>[實作約定]</code> 將課表展開為區段並逐段歸類，為本工具的計算方式；WHO 2020 與 US PAG 2018 均未針對間歇訓練提供專屬換算規則。Compendium 亦無「HIIT」對應代碼。</p>
 
@@ -1327,6 +1360,23 @@ const CONFIG = {
       { zh: '站著休息',             met: 1.8 },
       { zh: '坐著／完全休息',       met: 1.3 },
       { zh: '快走（5.6 km/hr）',    activityId: 'walk56' }
+    ],
+    // 熱身／緩和同樣不該要求使用者猜 MET；達 moderate 以上者一樣計入 MEM
+    warmupPresets: [
+      { zh: '慢跑（約 8 km/hr）',       runSpeedKmh: 8 },
+      { zh: '快走（6.4 km/hr）',        activityId: 'walk64' },
+      { zh: '快走（5.6 km/hr）',        activityId: 'walk56' },
+      { zh: '輕鬆騎車／飛輪',            activityId: 'bikeStatMod' },
+      { zh: '徒手熱身操（開合跳等）',     activityId: 'caliMod' },
+      { zh: '動態伸展',                 met: 2.3 },
+      { zh: '慢走（約 3 km/hr）',       met: 2.8 }
+    ],
+    cooldownPresets: [
+      { zh: '快走（5.6 km/hr）',        activityId: 'walk56' },
+      { zh: '慢走（約 3 km/hr）',       met: 2.8 },
+      { zh: '靜態伸展',                 activityId: 'stretch' },
+      { zh: '原地踏步／輕鬆活動',        met: 2.3 },
+      { zh: '站著休息',                 met: 1.8 }
     ]
   },
 
@@ -2537,9 +2587,13 @@ function runSelfTests() {
   /** 建立強度選單：選了動作就自動帶入 MET，使用者不必自行判斷 */
   function buildHiitPresets() {
     const fill = function (selId, metId, presets) {
+      // 選項直接標示強度分級，使用者一眼看出這段計不計入 MEM
+      const clsZh = { light: 'light・不計入', moderate: 'moderate', vigorous: 'vigorous・計 2 倍' };
       $(selId).innerHTML = '<option value="">— 自行輸入 MET —</option>' +
         presets.map(function (p, i) {
-          return '<option value="' + i + '">' + esc(p.zh) + '（MET ' + round(presetMet(p), 1) + '）</option>';
+          const m = presetMet(p);
+          return '<option value="' + i + '">' + esc(p.zh) + '（MET ' + round(m, 1) + '・' +
+            clsZh[classifyIntensity(m)] + '）</option>';
         }).join('');
       $(selId).addEventListener('change', function () {
         const i = $(selId).value;
@@ -2550,8 +2604,10 @@ function runSelfTests() {
       // 手動改動 MET 時取消選單對應，避免顯示與數值不符
       $(metId).addEventListener('input', function () { $(selId).value = ''; });
     };
+    fill('hWarmPreset', 'hWarmMet', CONFIG.hiit.warmupPresets);
     fill('hWorkPreset', 'hWorkMet', CONFIG.hiit.workPresets);
     fill('hRestPreset', 'hRestMet', CONFIG.hiit.restPresets);
+    fill('hCoolPreset', 'hCoolMet', CONFIG.hiit.cooldownPresets);
   }
   buildHiitPresets();
 
@@ -3430,7 +3486,7 @@ function runSelfTests() {
     $('fSpeed').value = ''; $('fPace').value = '';
     $('fDist').value = ''; $('fTime').value = '';
     fillHiitForm(null); $('hiitDerived').classList.add('hidden');
-    $('hWorkPreset').value = ''; $('hRestPreset').value = '';
+    ['hWarmPreset','hWorkPreset','hRestPreset','hCoolPreset'].forEach(function (id) { $(id).value = ''; });
     $('tmDerived').classList.add('hidden');
     setPhoto(null); $('filePhoto').value = '';
     $('fNote').value = '';
