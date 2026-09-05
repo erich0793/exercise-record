@@ -1558,6 +1558,126 @@ function percentileThreshold(histogram, totalPixels, percentile) {
 }
 
 /**
+ * 從一段文字中擷取所有可辨識的讀數。
+ *
+ * 必要性：部分運動 App 的版面（如 Nike Run Club）數值間距與字元間距幾乎相同，
+ * 任何以間距切分的規則都會把「2.46 KM 00:15:30 06:18 /KM」併成單一字串。
+ * 與其調整切分門檻，不如直接從合併後的字串中逐一擷取。
+ *
+ * 回傳 [{ raw, kind, value, unit }]，kind 可為：
+ *   distance / duration / pace / timeOrPace（無單位的 mm:ss，需交叉驗證）/
+ *   elevation / calories / number
+ */
+function extractReadouts(text) {
+  const t = String(text == null ? '' : text).replace(/\s+/g, '').toUpperCase();
+  if (!t) return [];
+  const out = [];
+  // 先比對最長的 h:mm:ss，再 mm:ss，最後一般數字，避免長字串被切碎
+  const re = /(\d{1,2}:[0-5]\d:[0-5]\d)|(\d{1,3}:[0-5]\d)|(\d{1,4}(?:\.\d{1,2})?)/g;
+  let m;
+  while ((m = re.exec(t)) !== null) {
+    const raw = m[0];
+    const tail = t.slice(re.lastIndex, re.lastIndex + 8);
+    // 單位可能以 /KM、MIN/KM 等形式出現，故一併比對斜線與 MIN
+    const um = tail.match(/^(?:\/|MIN\/?)?(KCAL|CAL|KM|MI|M)/);
+    const unit = um ? um[1] : null;
+
+    if (m[1]) {                                  // h:mm:ss：配速不會用此格式
+      out.push({ raw: raw, kind: 'duration', value: raw, unit: null });
+    } else if (m[2]) {                           // mm:ss
+      if (unit === 'KM' || unit === 'MI') {
+        out.push({ raw: raw, kind: 'pace', value: raw, unit: unit === 'MI' ? 'mi' : 'km' });
+      } else {
+        out.push({ raw: raw, kind: 'timeOrPace', value: raw, unit: null });
+      }
+    } else {                                     // 一般數字
+      const num = Number(m[3]);
+      if (!isFinite(num)) continue;
+      if (unit === 'KM') out.push({ raw: raw, kind: 'distance', value: m[3], unit: 'km' });
+      else if (unit === 'MI') out.push({ raw: raw, kind: 'distance',
+                                        value: String(round(num * CONFIG.ocr.mileToKm, 2)), unit: 'mi' });
+      else if (unit === 'M') out.push({ raw: raw, kind: 'elevation', value: m[3], unit: 'm' });
+      else if (unit === 'KCAL' || unit === 'CAL') out.push({ raw: raw, kind: 'calories', value: m[3], unit: 'kcal' });
+      else if (/\./.test(m[3]) && num > 0) out.push({ raw: raw, kind: 'distance', value: m[3], unit: null });
+      else out.push({ raw: raw, kind: 'number', value: m[3], unit: null });
+    }
+  }
+  return out;
+}
+
+/**
+ * 由擷取結果決定距離與時間，並以配速交叉驗證。
+ * 配速（min/km）應等於時長 ÷ 距離；三者互相檢核可排除誤讀，
+ * 也能在只讀到配速與距離時反推時長。
+ */
+/** 取得某個數值在擷取清單中的累計票數 */
+function votesOfValue(list, value) {
+  let n = 0;
+  (list || []).forEach(function (x) { if (x.value === value) n += (x.votes || 1); });
+  return n;
+}
+
+function resolveReadouts(items) {
+  const list = items || [];
+  const dists = list.filter(function (x) { return x.kind === 'distance'; });
+  const durs = list.filter(function (x) { return x.kind === 'duration'; });
+  const paces = list.filter(function (x) { return x.kind === 'pace'; });
+  const amb = list.filter(function (x) { return x.kind === 'timeOrPace'; });
+
+  // 無單位的 mm:ss 兩種角色都試
+  const durCands = durs.concat(amb).map(function (x) { return x.value; });
+  const paceCands = paces.map(function (x) {
+    // 每英里配速換算為每公里
+    const mins = parseDurationToMinutes(x.value);
+    return { value: x.value, minPerKm: x.unit === 'mi' ? mins / CONFIG.ocr.mileToKm : mins };
+  }).concat(amb.map(function (x) {
+    return { value: x.value, minPerKm: parseDurationToMinutes(x.value) };
+  }));
+
+  let best = null;
+  dists.forEach(function (d) {
+    const km = Number(d.value);
+    if (!(km > 0)) return;
+    durCands.forEach(function (tv) {
+      const mins = parseDurationToMinutes(tv);
+      if (!(mins > 0)) return;
+      if (!speedPlausibility(speedFromDistanceTime(km, mins)).ok) return;
+      // 若同時讀到配速，檢查是否與「時長 ÷ 距離」相符（容差 10%）
+      let paceOk = null;
+      paceCands.forEach(function (p) {
+        if (p.value === tv || !(p.minPerKm > 0)) return;
+        const implied = mins / km;
+        if (Math.abs(p.minPerKm - implied) / implied <= 0.10) paceOk = p.value;
+      });
+      // 配速相符是最強的證據；票數用於在同等條件下區分真實讀數與雜訊
+      const votes = (d.votes || 1) + (votesOfValue(list, tv) || 1);
+      const score = (paceOk ? 100 : 0) + votes;
+      if (!best || score > best.score) {
+        best = { distanceKm: d.value, duration: tv, paceConfirmedBy: paceOk,
+                 speed: speedFromDistanceTime(km, mins), score: score, votes: votes };
+      }
+    });
+  });
+  if (best) return best;
+
+  // 只有配速與距離時，反推時長
+  const d0 = dists[0], p0 = paces[0];
+  if (d0 && p0) {
+    const km = Number(d0.value);
+    const perKm = p0.unit === 'mi' ? parseDurationToMinutes(p0.value) / CONFIG.ocr.mileToKm
+                                   : parseDurationToMinutes(p0.value);
+    if (km > 0 && perKm > 0) {
+      const mins = perKm * km;
+      if (speedPlausibility(speedFromDistanceTime(km, mins)).ok) {
+        return { distanceKm: d0.value, duration: round(mins, 2) + '', derivedFromPace: true,
+                 paceConfirmedBy: p0.value, speed: speedFromDistanceTime(km, mins), score: 1 };
+      }
+    }
+  }
+  return null;
+}
+
+/**
  * 判斷一段 OCR 文字是距離、時間、或其他數值，並辨識單位。
  * 距離需有明確單位（km / mi）或小數點，避免把卡路里、高度誤判為距離。
  */
@@ -2070,6 +2190,32 @@ function runSelfTests() {
       actual: '天數=' + s.days + '（' + (s.daysOk ? '達標' : '未達標') + '）、缺漏肌群=' + (missingZh || '無') + ' → 肌力' + (s.met ? '達標' : '未達標'),
       pass: s.days === 2 && s.daysOk === true && s.groupsOk === false && s.met === false &&
             s.missing.length === 1 && s.missing[0].id === 'abdomen' });
+  })();
+
+  // TC-19：合併字串擷取與配速交叉驗證（Nike Run Club 版面實測）
+  (function () {
+    // 實測辨識輸出：該版面數值間距與字距相同，切分必然失敗，整列辨識得此字串
+    const merged = '2.46KM00:15:3006:18M';
+    const ex = extractReadouts(merged);
+    const kinds = ex.map(function (x) { return x.kind; }).join(',');
+    const res = resolveReadouts(ex);
+    // 英里制版面：距離與配速皆為英里，須換算
+    const mi = resolveReadouts(extractReadouts('1.53MI00:12:0007:50MI'));
+    // 只有配速與距離時反推時長
+    const derived = resolveReadouts(extractReadouts('5.00KM05:00MIN/KM'));
+    // 純雜訊不得產生結果
+    const junk = resolveReadouts(extractReadouts('a.aCal...:.Ca1..3a:Cam'));
+    T.push({ id: 'TC-19', name: '合併字串擷取與配速交叉驗證',
+      expected: '2.46KM00:15:3006:18M → 距離 2.46、時長 00:15:30、9.52 km/hr；英里制換算 1.53mi→2.46km；' +
+                '僅配速+距離可反推時長；純雜訊 → null',
+      actual: '擷取 ' + kinds + '；判定 ' + (res ? '距離 ' + res.distanceKm + '、時長 ' + res.duration +
+              '、' + round(res.speed, 2) + ' km/hr' : 'null') +
+              '；英里制 ' + (mi ? mi.distanceKm + ' km' : 'null') +
+              '；反推 ' + (derived && derived.derivedFromPace ? '成功（' + derived.duration + ' 分）' : '失敗') +
+              '；雜訊 ' + (junk === null ? 'null' : '誤判'),
+      pass: res && res.distanceKm === '2.46' && res.duration === '00:15:30' &&
+            round(res.speed, 2) === 9.52 && mi && mi.distanceKm === '2.46' &&
+            derived && derived.derivedFromPace === true && junk === null });
   })();
 
   // TC-18：強度選單——使用者選動作即可帶入 MET，不需自行估計
@@ -2798,16 +2944,24 @@ function runSelfTests() {
   function detectValueGroups(imgEl) {
     const cfg = CONFIG.ocr.detect;
     const g = toGray(imgEl, cfg.workWidth);
-    const t = percentileThreshold(g.hist, g.w * g.h, cfg.percentile);
-    const bin = new Uint8Array(g.w * g.h);
-    for (let i = 0; i < bin.length; i++) bin[i] = g.gray[i] >= t ? 1 : 0;
+    const n = g.w * g.h;
 
-    const glyphs = connectedComponents(bin, g.w, g.h).filter(function (b) {
-      const bw = b.x1 - b.x0 + 1, bh = b.y1 - b.y0 + 1;
-      const fill = b.n / (bw * bh);
-      return bh >= g.h * cfg.minHeightFrac && bh <= g.h * cfg.maxHeightFrac &&
-             bw >= 2 && bw <= bh * 1.6 && fill > 0.12 && fill < 0.95;
-    });
+    /** 依門檻與極性取出「像字元」的元件 */
+    const glyphsAt = function (pct, bright) {
+      const t = percentileThreshold(g.hist, n, pct);
+      const bin = new Uint8Array(n);
+      for (let i = 0; i < n; i++) bin[i] = (bright ? g.gray[i] >= t : g.gray[i] < t) ? 1 : 0;
+      return connectedComponents(bin, g.w, g.h).filter(function (b) {
+        const bw = b.x1 - b.x0 + 1, bh = b.y1 - b.y0 + 1;
+        const fill = b.n / (bw * bh);
+        return bh >= g.h * cfg.minHeightFrac && bh <= g.h * cfg.maxHeightFrac &&
+               bw >= 2 && bw <= bh * 1.6 && fill > 0.12 && fill < 0.95;
+      });
+    };
+    // 亮字暗底（多數運動 App／跑步機）與暗字亮底（整頁截圖）都試，取字元較多者
+    let glyphs = glyphsAt(cfg.percentile, true);
+    const dark = glyphsAt(100 - cfg.percentile, false);
+    if (dark.length > glyphs.length) glyphs = dark;
     if (!glyphs.length) return [];
 
     glyphs.sort(function (a, b) { return a.y0 - b.y0; });
@@ -2996,10 +3150,23 @@ function runSelfTests() {
     const nw = imgEl.naturalWidth, nh = imgEl.naturalHeight;
     const out = [];
     const found = {};
+    const pooled = {};                 // 跨群組匯總擷取到的讀數
+    // 整列聯集：數值緊密排列時（如 Nike Run Club）切分必然出錯，
+    // 但整列一次辨識可取得完整字串，再交由 extractReadouts 拆解。
+    if (groups.length >= 1) {
+      let rx0 = Infinity, ry0 = Infinity, rx1 = -Infinity, ry1 = -Infinity;
+      groups.forEach(function (g) {
+        if (g.x0 < rx0) rx0 = g.x0; if (g.x1 > rx1) rx1 = g.x1;
+        if (g.y0 < ry0) ry0 = g.y0; if (g.y1 > ry1) ry1 = g.y1;
+      });
+      groups = groups.concat([{ x0: rx0, y0: ry0, x1: rx1, y1: ry1, glyphs: 0, wholeRow: true }]);
+    }
+
     let chain = Promise.resolve();
     groups.forEach(function (gp, i) {
       chain = chain.then(function () {
-        onProgress && onProgress('辨識第 ' + (i + 1) + ' / ' + groups.length + ' 個數值…');
+        onProgress && onProgress(gp.wholeRow ? '整列複核中…'
+                                               : '辨識第 ' + (i + 1) + ' / ' + groups.length + ' 個數值…');
         const rect = { x: gp.x0 * nw, y: gp.y0 * nh, w: (gp.x1 - gp.x0) * nw, h: (gp.y1 - gp.y0) * nh };
         return recognizeRegion(imgEl, rect, null, null).then(function (results) {
           // 統計各文字出現次數，再依格式歸類
@@ -3016,10 +3183,21 @@ function runSelfTests() {
                      cls: classifyReadout(x.text) };
           }).sort(function (a, b) { return b.votes - a.votes || b.confidence - a.confidence; });
 
+          // 逐一擷取字串中的讀數：版面把多個數值黏在一起時，切分無法解決，擷取才行
+          results.forEach(function (r) {
+            extractReadouts(r.text).forEach(function (x) {
+              const key = x.kind + '|' + x.value + '|' + (x.unit || '');
+              if (!pooled[key]) pooled[key] = { item: x, votes: 0 };
+              pooled[key].votes++;
+              pooled[key].item.votes = pooled[key].votes;
+            });
+          });
           const best = ranked.filter(function (r) {
             return r.cls.kind === 'time' || r.cls.kind === 'distance';
           })[0] || ranked[0] || null;
-          out.push({ box: gp, best: best, ranked: ranked.slice(0, 4), total: results.length });
+          if (!gp.wholeRow) {
+            out.push({ box: gp, best: best, ranked: ranked.slice(0, 4), total: results.length });
+          }
           if (best && (best.cls.kind === 'time' || best.cls.kind === 'distance')) {
             const k = best.cls.kind;
             if (!found[k] || best.votes > found[k].votes) {
@@ -3033,7 +3211,26 @@ function runSelfTests() {
         });
       });
     });
-    return chain.then(function () { return { groups: out, found: found }; });
+    return chain.then(function () {
+      // 以配速交叉驗證，決定最終的距離與時長
+      const items = Object.keys(pooled)
+        .sort(function (a, b) { return pooled[b].votes - pooled[a].votes; })
+        .map(function (k) { return pooled[k].item; });
+      const resolved = resolveReadouts(items);
+      if (resolved) {
+        const votesOf = function (kind, value) {
+          const k = Object.keys(pooled).filter(function (x) {
+            return pooled[x].item.value === value;
+          })[0];
+          return k ? pooled[k].votes : 1;
+        };
+        found.distance = { value: resolved.distanceKm, unit: 'km',
+                           votes: votesOf('distance', resolved.distanceKm), total: 0 };
+        found.time = { value: resolved.duration, votes: votesOf('duration', resolved.duration), total: 0 };
+        found.resolved = resolved;
+      }
+      return { groups: out, found: found, extracted: items };
+    });
   }
 
   /** 開啟辨識介面：框選 → 辨識 → 確認後才套用 */
@@ -3234,6 +3431,21 @@ function runSelfTests() {
           if (f.time) {
             ov.querySelector('#ocrTime').value = f.time.value;
             ov.querySelector('#ocrTimeVote').textContent = f.time.votes + '/' + f.time.total + ' 票';
+          }
+          // 擷取式解析已直接給出可用的組合時，優先採用
+          if (f.resolved) {
+            ov.querySelector('#ocrDist').value = f.resolved.distanceKm;
+            ov.querySelector('#ocrTime').value = f.resolved.duration;
+            ov.querySelector('#ocrDistVote').textContent = f.distance.votes + ' 票';
+            ov.querySelector('#ocrTimeVote').textContent = f.time.votes + ' 票';
+            prog.innerHTML = '自動抓到：<strong>距離 ' + esc(f.resolved.distanceKm) + ' km、時長 ' +
+              esc(f.resolved.duration) + '</strong>（約 ' + round(f.resolved.speed, 1) + ' km/hr）' +
+              (f.resolved.paceConfirmedBy
+                 ? '　<strong>配速 ' + esc(f.resolved.paceConfirmedBy) + ' 與之相符，已交叉驗證</strong>'
+                 : '') +
+              (f.resolved.derivedFromPace ? '　時長由配速與距離反推' : '') +
+              '　請對照照片確認後再套用。';
+            return;
           }
           const rec = reconcileAndFill();
           const got = [];
