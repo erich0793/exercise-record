@@ -154,6 +154,10 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-
 .field{margin-bottom:12px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+/* 分、秒各自獨立：手機的數字鍵盤沒有「:」可打，拆成兩格才輸入得了 */
+.timeinput{display:flex;align-items:center;gap:6px}
+.timeinput input{flex:1 1 0;min-width:0}
+.timesep{font-weight:700;font-size:calc(16px * var(--fs));opacity:.7}
 @media(max-width:420px){.grid2{grid-template-columns:1fr}}
 .btn{
   background:var(--accent);color:var(--accent-text);border:none;border-radius:6px;
@@ -483,7 +487,7 @@ svg.chart{width:100%;height:auto;display:block}
           <input type="file" id="filePhoto" accept="image/*" class="hidden">
           <div class="photoprev hidden" id="photoPrev"><img id="photoImg" alt="跑步機螢幕照片"></div>
           <p class="faint" style="margin:8px 0 10px">
-            照片<strong>僅存在你的裝置</strong>，不會上傳。網頁不會自動辨識照片上的數字——請對照螢幕填入下方兩欄，即可自動換算速度與 MET。
+            照片<strong>僅存在你的裝置</strong>，不會上傳，辨識也在本機完成。可按「自動辨識數字」讓網頁讀出距離與時間，或直接對照螢幕填入下方欄位，即可自動換算速度與 MET。
           </p>
           <div class="grid2">
             <div class="field" style="margin-bottom:0">
@@ -491,8 +495,14 @@ svg.chart{width:100%;height:auto;display:block}
               <input type="number" id="fDist" min="0" step="0.01" inputmode="decimal" placeholder="例：2.8">
             </div>
             <div class="field" style="margin-bottom:0">
-              <label for="fTime">時間（mm:ss）</label>
-              <input type="text" id="fTime" inputmode="numeric" placeholder="例：17:12">
+              <label for="fTimeMin">時間（分 : 秒）</label>
+              <div class="timeinput">
+                <input type="number" id="fTimeMin" min="0" step="1" inputmode="numeric"
+                       placeholder="17" aria-label="時間：分">
+                <span class="timesep" aria-hidden="true">:</span>
+                <input type="number" id="fTimeSec" min="0" max="59" step="1" inputmode="numeric"
+                       placeholder="12" aria-label="時間：秒">
+              </div>
             </div>
           </div>
           <p class="derived hidden" id="tmDerived"></p>
@@ -1022,13 +1032,13 @@ svg.chart{width:100%;height:auto;display:block}
 
       <h4 id="h-opt-treadmill">跑步機讀數（照片與距離時間換算）</h4>
       <p>選擇「跑步」時會出現此面板。你可以拍下或匯入跑步機螢幕的照片，<strong>照片只存在你的裝置上，不會上傳</strong>，存檔前會自動縮圖以免佔滿瀏覽器儲存空間。</p>
-      <p><strong>網頁不會自動辨識照片上的數字。</strong>照片的用途是讓你邊看邊填——請把螢幕上的<strong>距離</strong>與<strong>時間</strong>填入下方兩欄，系統會自動換算平均速度、配速、時長與 MET，不需要你自己算。</p>
+      <p>你可以按「🔍 自動辨識數字」讓網頁直接讀出螢幕上的距離與時間（見下方說明），也可以自己對照照片把<strong>距離</strong>與<strong>時間</strong>填進下方欄位。兩種方式都會自動換算平均速度、配速、時長與 MET，不需要你自己算。</p>
       <ul>
-        <li>時間可填 <code>mm:ss</code>（例 <code>17:12</code>）、<code>h:mm:ss</code>，或直接填分鐘數</li>
+        <li>時間分成「<strong>分</strong>」與「<strong>秒</strong>」兩格。手機叫出的數字鍵盤打不出冒號，所以拆成兩格；只填「分」也可以，秒會當成 0。秒填超過 59 會自動進位（16 分 90 秒＝17.5 分）</li>
         <li>換算採<strong>全程平均速度</strong>：距離 ÷ 時間。若你的課表包含大量走路休息或間歇衝刺，平均速度會低估或高估實際強度，此時建議改用主觀強度覆寫</li>
         <li>填完後速度、配速與時長三欄會自動帶入，仍可手動微調</li>
       </ul>
-      <p><strong>自動辨識（OCR）</strong>：加入照片後會出現「🔍 自動辨識數字」。使用方式是<strong>先選欄位（距離／時間），再框住照片上對應的數字</strong>，然後按「辨識選取範圍」。</p>
+      <p><strong>自動辨識（OCR）</strong>：加入照片後會出現「🔍 自動辨識數字」。辨識在你的裝置上完成，照片不會離開手機。</p>
       <ul>
         <li><strong>優先用「✨ 自動抓取數字」</strong>：不必框選，系統會自己找出照片上的數值群組、辨識並歸類。偵測到的區域會用方框標在照片上，可直接核對；若歸類不對，可從清單自行指派。</li>
         <li><strong>抓不到時才手動框選</strong>：先選欄位，再框住該數字。框選範圍會自動收緊到字元邊界，框得稍鬆也沒關係。</li>
@@ -3489,7 +3499,7 @@ function runSelfTests() {
       '<div id="ocrList"></div>' +
       '<div class="ocrresult">' +
       '<label for="ocrDist">距離 km</label><input type="text" id="ocrDist" inputmode="decimal"><span class="vote" id="ocrDistVote"></span>' +
-      '<label for="ocrTime">時間</label><input type="text" id="ocrTime" inputmode="numeric"><span class="vote" id="ocrTimeVote"></span>' +
+      '<label for="ocrTime">時間</label><input type="text" id="ocrTime" inputmode="text"><span class="vote" id="ocrTimeVote"></span>' +
       '</div>' +
       '<div class="btnrow" style="margin-top:12px">' +
       '<button type="button" class="btn small" id="ocrApply">套用到表單</button>' +
@@ -3712,7 +3722,7 @@ function runSelfTests() {
       const t = ov.querySelector('#ocrTime').value.trim();
       if (!d && !t) { toast('尚未有可套用的數值'); return; }
       if (d) $('fDist').value = d;
-      if (t) $('fTime').value = t;
+      if (t) setTimeText(t);
       applyTreadmill();
       close();
       toast('已套用辨識結果，請再核對一次');
@@ -3735,16 +3745,40 @@ function runSelfTests() {
     e.target.value = '';
   });
 
+  /**
+   * 讀取「分 : 秒」兩格並組成 mm:ss 字串（兩格皆空則回傳空字串）。
+   * 手機的數字鍵盤打不出「:」，所以時間拆成兩個純數字欄位；秒數超過 59 時
+   * 自動進位，使用者填「90 秒」也不會變成無法解析的 0:90。
+   */
+  function timeTextOf() {
+    const mRaw = $('fTimeMin').value.trim(), sRaw = $('fTimeSec').value.trim();
+    if (!mRaw && !sRaw) return '';
+    let mm = Math.max(0, Math.floor(Number(mRaw) || 0));
+    let ss = Math.max(0, Math.floor(Number(sRaw) || 0));
+    mm += Math.floor(ss / 60); ss = ss % 60;
+    return mm + ':' + (ss < 10 ? '0' + ss : String(ss));
+  }
+
+  /** 把 mm:ss、h:mm:ss 或純分鐘數（含 OCR 結果與舊紀錄）填回「分 : 秒」兩格 */
+  function setTimeText(text) {
+    const mins = parseDurationToMinutes(text);
+    if (!(mins >= 0) || mins === null) { $('fTimeMin').value = ''; $('fTimeSec').value = ''; return; }
+    const total = Math.round(mins * 60);
+    $('fTimeMin').value = Math.floor(total / 60);
+    $('fTimeSec').value = total % 60;
+  }
+
   /** 由距離與時間推導速度、配速與時長並填入表單 */
   function applyTreadmill() {
     const dist = Number($('fDist').value);
-    const mins = parseDurationToMinutes($('fTime').value);
+    const timeText = timeTextOf();
+    const mins = parseDurationToMinutes(timeText);
     const box = $('tmDerived');
     if (!(dist > 0) || !(mins > 0)) {
       box.classList.add('hidden');
-      if ($('fTime').value.trim() && mins === null) {
+      if (timeText && mins === null) {
         box.classList.remove('hidden');
-        box.textContent = '時間格式無法解析，請用 mm:ss（例 17:12）或直接填分鐘數。';
+        box.textContent = '時間格式無法解析，請確認「分」與「秒」都是數字。';
       }
       return;
     }
@@ -3769,7 +3803,8 @@ function runSelfTests() {
     updatePreview();
   }
   $('fDist').addEventListener('input', applyTreadmill);
-  $('fTime').addEventListener('input', applyTreadmill);
+  $('fTimeMin').addEventListener('input', applyTreadmill);
+  $('fTimeSec').addEventListener('input', applyTreadmill);
 
   function syncModules() {
     const a = currentActivity();
@@ -3954,7 +3989,7 @@ function runSelfTests() {
     $('fDate').value = fmtDate(new Date());
     $('fMinutes').value = '';
     $('fSpeed').value = ''; $('fPace').value = '';
-    $('fDist').value = ''; $('fTime').value = '';
+    $('fDist').value = ''; $('fTimeMin').value = ''; $('fTimeSec').value = '';
     fillHiitForm(null); $('hiitDerived').classList.add('hidden');
     ['hWarmPreset','hWorkPreset','hRestPreset','hCoolPreset'].forEach(function (id) { $(id).value = ''; });
     $('tmDerived').classList.add('hidden');
@@ -3987,7 +4022,7 @@ function runSelfTests() {
     if (r.meta && r.meta.speedKmh) { $('fSpeed').value = r.meta.speedKmh; $('fPace').value = round(speedKmhToPace(r.meta.speedKmh), 2); }
     fillHiitForm((r.meta && r.meta.hiitPlan) || null);
     $('fDist').value = (r.meta && r.meta.distanceKm) ? r.meta.distanceKm : '';
-    $('fTime').value = (r.meta && r.meta.timeText) ? r.meta.timeText : '';
+    setTimeText((r.meta && r.meta.timeText) ? r.meta.timeText : '');
     $('tmDerived').classList.add('hidden');
     setPhoto((r.meta && r.meta.photo) || null);
     $('fOverride').checked = r.metSource === 'subjective';
@@ -4032,7 +4067,8 @@ function runSelfTests() {
     if (a && a.kind === 'run') {
       obj.meta.speedKmh = Number($('fSpeed').value) || null;
       if (Number($('fDist').value) > 0) obj.meta.distanceKm = Number($('fDist').value);
-      if ($('fTime').value.trim()) obj.meta.timeText = $('fTime').value.trim();
+      const tText = timeTextOf();
+      if (tText) obj.meta.timeText = tText;
       if (pendingPhoto) obj.meta.photo = pendingPhoto;
     }
     if (a && a.kind === 'swim') obj.meta.swimPct = JSON.parse(JSON.stringify(swimPct));
