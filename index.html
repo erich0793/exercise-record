@@ -1412,7 +1412,11 @@ const CONFIG = {
     upscale: 3,
     maxVariants: 6,
     // 自動偵測數值群組的參數
-    detect: { workWidth: 900, percentile: 98, minHeightFrac: 0.025, maxHeightFrac: 0.22 },
+    detect: { workWidth: 900, percentiles: [98, 95, 92, 88, 84],
+              minHeightFrac: 0.025, maxHeightFrac: 0.22, maxRows: 6, maxRegions: 8 },
+    speedBandKmh: [3, 25],
+    // 後備：光線不均、低對比的主機照片改用 Sauvola 局部門檻
+    adaptive: { upscale: 4, window: 61, k: [0.15, 0.25] },
     mileToKm: 1.609344
   },
 
@@ -1619,6 +1623,14 @@ function votesOfValue(list, value) {
 
 function resolveReadouts(items) {
   const list = items || [];
+  // 照片辨識專用的速度合理帶。手動輸入的 speedPlausibility（45 km/hr）是「明顯打錯」
+  // 的最後防線，對 OCR 的排歧太寬鬆：實測 Garmin 主機曾湊出「9.63 km／22:19」，
+  // 配速 2:19 自洽卻等於 25.9 km/hr——超過 5 公里世界紀錄配速，人類不可能維持。
+  // 這裡改用跑步實務範圍（3～25 km/hr）淘汰這類自洽但不可能的組合。
+  const band = CONFIG.ocr.speedBandKmh;
+  const inBand = function (speed) {
+    return speedPlausibility(speed).ok && speed >= band[0] && speed <= band[1];
+  };
   const dists = list.filter(function (x) { return x.kind === 'distance'; });
   const durs = list.filter(function (x) { return x.kind === 'duration'; });
   const paces = list.filter(function (x) { return x.kind === 'pace'; });
@@ -1641,7 +1653,7 @@ function resolveReadouts(items) {
     durCands.forEach(function (tv) {
       const mins = parseDurationToMinutes(tv);
       if (!(mins > 0)) return;
-      if (!speedPlausibility(speedFromDistanceTime(km, mins)).ok) return;
+      if (!inBand(speedFromDistanceTime(km, mins))) return;
       // 若同時讀到配速，檢查是否與「時長 ÷ 距離」相符（容差 10%）
       let paceOk = null;
       paceCands.forEach(function (p) {
@@ -1660,6 +1672,31 @@ function resolveReadouts(items) {
   });
   if (best) return best;
 
+  // 沒有可用距離時，由「時長 + 配速」反推距離（距離 = 時長 ÷ 每公里配速）。
+  // 兩個 mm:ss 值同時出現時，較長者必為時長、較短者為配速，可據此配對。
+  const times = durs.concat(amb).concat(paces);
+  let derived = null;
+  times.forEach(function (a) {
+    times.forEach(function (b) {
+      if (a === b) return;
+      const mins = parseDurationToMinutes(a.value);
+      const perKm = b.unit === 'mi' ? parseDurationToMinutes(b.value) / CONFIG.ocr.mileToKm
+                                    : parseDurationToMinutes(b.value);
+      if (!(mins > 0) || !(perKm > 0) || perKm >= mins) return;      // 配速必短於總時長
+      if (a.kind === 'pace' || b.kind === 'duration') return;        // 已知角色不可對調
+      const km = mins / perKm;
+      if (!(km > 0) || km > 500) return;
+      if (!inBand(speedFromDistanceTime(km, mins))) return;
+      const sc = (a.votes || 1) + (b.votes || 1);
+      if (!derived || sc > derived.score) {
+        derived = { distanceKm: String(round(km, 2)), duration: a.value, derivedFromPace: true,
+                    paceConfirmedBy: b.value, distanceDerived: true,
+                    speed: speedFromDistanceTime(km, mins), score: sc };
+      }
+    });
+  });
+  if (derived) return derived;
+
   // 只有配速與距離時，反推時長
   const d0 = dists[0], p0 = paces[0];
   if (d0 && p0) {
@@ -1668,7 +1705,7 @@ function resolveReadouts(items) {
                                    : parseDurationToMinutes(p0.value);
     if (km > 0 && perKm > 0) {
       const mins = perKm * km;
-      if (speedPlausibility(speedFromDistanceTime(km, mins)).ok) {
+      if (inBand(speedFromDistanceTime(km, mins))) {
         return { distanceKm: d0.value, duration: round(mins, 2) + '', derivedFromPace: true,
                  paceConfirmedBy: p0.value, speed: speedFromDistanceTime(km, mins), score: 1 };
       }
@@ -2190,6 +2227,26 @@ function runSelfTests() {
       actual: '天數=' + s.days + '（' + (s.daysOk ? '達標' : '未達標') + '）、缺漏肌群=' + (missingZh || '無') + ' → 肌力' + (s.met ? '達標' : '未達標'),
       pass: s.days === 2 && s.daysOk === true && s.groupsOk === false && s.met === false &&
             s.missing.length === 1 && s.missing[0].id === 'abdomen' });
+  })();
+
+  // TC-20：直式清單版面與「自洽但不可能」的組合（Garmin 主機實測）
+  (function () {
+    // 該主機每個數值各佔一行，且天花板反光比字還亮；整列辨識常只讀到時間與配速
+    const rowStr = resolveReadouts(extractReadouts('22:19 6:23'));   // 由配速反推距離
+    const full = resolveReadouts(extractReadouts('3.51KM 22:19 6:23'));
+    // 曾實際發生：把 7.7 當距離配 22:19，配速 2:19 竟自洽——但 20.7 km/hr 已超過
+    // 5 公里世界紀錄配速，人類不可能維持 22 分鐘，須由速度合理帶擋下
+    const bogus = resolveReadouts(extractReadouts('22:19 2:19'));
+    const band = CONFIG.ocr.speedBandKmh;
+    T.push({ id: 'TC-20', name: '直式清單版面與速度合理帶（Garmin 主機）',
+      expected: '「22:19 6:23」→ 由配速反推距離 3.5 km；「3.51KM 22:19 6:23」→ 3.51 km、9.44 km/hr；' +
+                '「22:19 2:19」（25.9 km/hr）→ null；合理帶 ' + band[0] + '～' + band[1] + ' km/hr',
+      actual: '反推 ' + (rowStr && rowStr.distanceDerived ? rowStr.distanceKm + ' km' : '失敗') +
+              '；完整 ' + (full ? full.distanceKm + ' km、' + round(full.speed, 2) + ' km/hr' : 'null') +
+              '；超速組合 ' + (bogus === null ? 'null（已擋下）' : '誤判為 ' + bogus.distanceKm),
+      pass: rowStr && rowStr.distanceDerived === true && rowStr.distanceKm === '3.5' &&
+            full && full.distanceKm === '3.51' && round(full.speed, 2) === 9.44 &&
+            bogus === null });
   })();
 
   // TC-19：合併字串擷取與配速交叉驗證（Nike Run Club 版面實測）
@@ -2938,8 +2995,13 @@ function runSelfTests() {
 
   /**
    * 自動找出照片中「大字數值」的群組（回傳比例座標方框）。
-   * 作法：高百分位二值化 → 連通元件挑出字元 → 依垂直位置分列 →
-   * 取字元最多的一列 → 列內依水平間距切成數值群組。
+   * 作法：多組百分位二值化 → 連通元件挑出字元 → 依垂直位置分列 →
+   * 以「成列字元數」挑出最佳門檻 → 列內依水平間距切成數值群組。
+   *
+   * 為何要試多組百分位：實測同一組固定門檻無法通吃。跑步機主機字大又亮，98
+   * 百分位剛好；Nike 全螢幕截圖白底面積大，98 只留下最亮的一小撮；Garmin
+   * 主機有天花板反光「比字還亮」，98 只會框到反光。改用候選門檻各跑一次、
+   * 取分列後仍成列的字元數最多者，三張參考照片各自落在 88／95／98。
    */
   function detectValueGroups(imgEl) {
     const cfg = CONFIG.ocr.detect;
@@ -2958,51 +3020,87 @@ function runSelfTests() {
                bw >= 2 && bw <= bh * 1.6 && fill > 0.12 && fill < 0.95;
       });
     };
-    // 亮字暗底（多數運動 App／跑步機）與暗字亮底（整頁截圖）都試，取字元較多者
-    let glyphs = glyphsAt(cfg.percentile, true);
-    const dark = glyphsAt(100 - cfg.percentile, false);
-    if (dark.length > glyphs.length) glyphs = dark;
-    if (!glyphs.length) return [];
 
-    glyphs.sort(function (a, b) { return a.y0 - b.y0; });
-    const rows = [];
-    glyphs.forEach(function (gl) {
-      const gh = gl.y1 - gl.y0 + 1, gc = (gl.y0 + gl.y1) / 2;
-      let row = null;
-      for (let i = 0; i < rows.length; i++) {
-        const r = rows[i];
-        if (Math.abs(r.cy - gc) < r.hAvg * 0.6 && Math.abs(r.hAvg - gh) / r.hAvg < 0.45) { row = r; break; }
-      }
-      if (!row) { row = { items: [], cy: gc, hAvg: gh }; rows.push(row); }
-      row.items.push(gl);
-      row.cy = row.items.reduce(function (s, i) { return s + (i.y0 + i.y1) / 2; }, 0) / row.items.length;
-      row.hAvg = row.items.reduce(function (s, i) { return s + (i.y1 - i.y0 + 1); }, 0) / row.items.length;
+    /** 把字元依垂直位置分列，並回傳字元較多的前幾列 */
+    const rowsOf = function (glyphs) {
+      if (!glyphs.length) return [];
+      glyphs.sort(function (a, b) { return a.y0 - b.y0; });
+      const rows = [];
+      glyphs.forEach(function (gl) {
+        const gh = gl.y1 - gl.y0 + 1, gc = (gl.y0 + gl.y1) / 2;
+        let row = null;
+        for (let i = 0; i < rows.length; i++) {
+          const r = rows[i];
+          if (Math.abs(r.cy - gc) < r.hAvg * 0.6 && Math.abs(r.hAvg - gh) / r.hAvg < 0.45) { row = r; break; }
+        }
+        if (!row) { row = { items: [], cy: gc, hAvg: gh }; rows.push(row); }
+        row.items.push(gl);
+        row.cy = row.items.reduce(function (s, i) { return s + (i.y0 + i.y1) / 2; }, 0) / row.items.length;
+        row.hAvg = row.items.reduce(function (s, i) { return s + (i.y1 - i.y0 + 1); }, 0) / row.items.length;
+      });
+      // 版面可能是橫列（跑步機、Nike）或直式清單（Garmin 主機，每個數值各佔一行），
+      // 故不只取單一列，改為保留字元較多的前幾列一併辨識。
+      rows.sort(function (a, b) { return (b.items.length - a.items.length) || (b.hAvg - a.hAvg); });
+      return rows.filter(function (r) { return r.items.length >= 2; }).slice(0, cfg.maxRows);
+    };
+
+    // 亮字暗底（多數運動 App／跑步機）與暗字亮底（整頁截圖）都試，
+    // 每種極性再掃過候選百分位，以「成列字元數」評分。
+    const cands = [];
+    (cfg.percentiles || [cfg.percentile]).forEach(function (pct) {
+      [true, false].forEach(function (bright) {
+        const rows = rowsOf(glyphsAt(bright ? pct : 100 - pct, bright));
+        if (!rows.length) return;
+        cands.push({ pct: pct, rows: rows,
+                     score: rows.reduce(function (s, r) { return s + r.items.length; }, 0) });
+      });
     });
-    // 數值列通常字元最多；字高作為次要條件
-    rows.sort(function (a, b) { return (b.items.length - a.items.length) || (b.hAvg - a.hAvg); });
-    const row = rows[0];
-    row.items.sort(function (a, b) { return a.x0 - b.x0; });
+    if (!cands.length) return { groups: [], rows: [] };
+    // 取「成列字元數」最多的一組門檻。試過改成「在最高分某個容差內取最嚴門檻」以省
+    // OCR 次數，但那會讓 Garmin 主機少讀到距離——寧可多花偵測時間，也不要漏讀；
+    // 真正的成本大戶（逐值辨識）已由下面的整列短路機制擋掉。
+    const kept = cands.reduce(function (a, b) { return b.score > a.score ? b : a; }).rows;
 
-    const groups = [];
-    let cur = [row.items[0]];
-    for (let i = 1; i < row.items.length; i++) {
-      const prev = cur[cur.length - 1], it = row.items[i];
-      if (it.x0 - prev.x1 > row.hAvg * 0.9) { groups.push(cur); cur = [it]; }   // 間距大於字高 → 換一組
-      else cur.push(it);
-    }
-    groups.push(cur);
-
-    const pad = Math.round(row.hAvg * 0.18);
-    return groups.map(function (gr) {
+    // 每列的整體外框：數值緊密排列時（如 Nike Run Club）切分必然出錯，
+    // 整列一次辨識才拿得到完整字串，再交由 extractReadouts 拆解。
+    const rowsOut = [];
+    kept.forEach(function (row, rowIdx) {
       let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
-      gr.forEach(function (b) {
+      row.items.forEach(function (b) {
         if (b.x0 < x0) x0 = b.x0; if (b.x1 > x1) x1 = b.x1;
         if (b.y0 < y0) y0 = b.y0; if (b.y1 > y1) y1 = b.y1;
       });
-      return { x0: Math.max(0, x0 - pad) / g.w, y0: Math.max(0, y0 - pad) / g.h,
-               x1: Math.min(g.w, x1 + pad) / g.w, y1: Math.min(g.h, y1 + pad) / g.h,
-               glyphs: gr.length };
+      const pad = Math.round(row.hAvg * 0.18);
+      if ((x1 - x0) / g.w <= 0.02) return;
+      rowsOut.push({ x0: Math.max(0, x0 - pad) / g.w, y0: Math.max(0, y0 - pad) / g.h,
+                     x1: Math.min(g.w, x1 + pad) / g.w, y1: Math.min(g.h, y1 + pad) / g.h,
+                     glyphs: row.items.length, wholeRow: true, row: rowIdx });
     });
+
+    const out = [];
+    kept.forEach(function (row, rowIdx) {
+      row.items.sort(function (a, b) { return a.x0 - b.x0; });
+      const groups = [];
+      let cur = [row.items[0]];
+      for (let i = 1; i < row.items.length; i++) {
+        const prev = cur[cur.length - 1], it = row.items[i];
+        if (it.x0 - prev.x1 > row.hAvg * 0.9) { groups.push(cur); cur = [it]; }   // 間距大於字高 → 換一組
+        else cur.push(it);
+      }
+      groups.push(cur);
+      const pad = Math.round(row.hAvg * 0.18);
+      groups.forEach(function (gr) {
+        let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+        gr.forEach(function (b) {
+          if (b.x0 < x0) x0 = b.x0; if (b.x1 > x1) x1 = b.x1;
+          if (b.y0 < y0) y0 = b.y0; if (b.y1 > y1) y1 = b.y1;
+        });
+        out.push({ x0: Math.max(0, x0 - pad) / g.w, y0: Math.max(0, y0 - pad) / g.h,
+                   x1: Math.min(g.w, x1 + pad) / g.w, y1: Math.min(g.h, y1 + pad) / g.h,
+                   glyphs: gr.length, row: rowIdx });
+      });
+    });
+    return { groups: out, rows: rowsOut };
   }
 
   /**
@@ -3048,8 +3146,89 @@ function runSelfTests() {
              w: Math.max(8, (x1 - x0 + 1) / sc), h: Math.max(8, (y1 - y0 + 1) / sc) };
   }
 
+  /**
+   * Sauvola 局部自適應二值化。
+   * 以積分圖求局部平均 m 與標準差 s，門檻 T = m × (1 + k × (s/R − 1))。
+   * 全域門檻在光線不均時失效——實測某跑步機主機照片中，天花板反光比文字更亮，
+   * 任何全域百分位都只會選到反光；局部門檻才能取出低對比的細字。
+   */
+  function sauvolaBinarize(gray, w, h, win, k, bright) {
+    const W1 = w + 1;
+    const I = new Float64Array(W1 * (h + 1));
+    const I2 = new Float64Array(W1 * (h + 1));
+    for (let y = 0; y < h; y++) {
+      let rs = 0, rs2 = 0;
+      for (let x = 0; x < w; x++) {
+        const v = gray[y * w + x];
+        rs += v; rs2 += v * v;
+        I[(y + 1) * W1 + (x + 1)] = I[y * W1 + (x + 1)] + rs;
+        I2[(y + 1) * W1 + (x + 1)] = I2[y * W1 + (x + 1)] + rs2;
+      }
+    }
+    const r = win >> 1;
+    const out = new Uint8Array(w * h);
+    for (let y = 0; y < h; y++) {
+      const y0 = Math.max(0, y - r), y1 = Math.min(h - 1, y + r);
+      for (let x = 0; x < w; x++) {
+        const x0 = Math.max(0, x - r), x1 = Math.min(w - 1, x + r);
+        const n = (x1 - x0 + 1) * (y1 - y0 + 1);
+        const sum = I[(y1 + 1) * W1 + (x1 + 1)] - I[y0 * W1 + (x1 + 1)] - I[(y1 + 1) * W1 + x0] + I[y0 * W1 + x0];
+        const sum2 = I2[(y1 + 1) * W1 + (x1 + 1)] - I2[y0 * W1 + (x1 + 1)] - I2[(y1 + 1) * W1 + x0] + I2[y0 * W1 + x0];
+        const m = sum / n;
+        const sd = Math.sqrt(Math.max(0, sum2 / n - m * m));
+        const T = m * (1 + k * (sd / 128 - 1));
+        out[y * w + x] = (bright ? gray[y * w + x] > T : gray[y * w + x] < T) ? 1 : 0;
+      }
+    }
+    return out;
+  }
+
+  /** 後備前處理：先放大並拉伸對比，再以 Sauvola 局部門檻二值化 */
+  function adaptiveVariants(imgEl, rect) {
+    const up = CONFIG.ocr.adaptive.upscale;
+    const cw = Math.max(8, Math.round(rect.w * up)), ch = Math.max(8, Math.round(rect.h * up));
+    if (cw * ch > 4e6) return [];                      // 過大則略過，避免拖垮手機
+    const cv = document.createElement('canvas');
+    cv.width = cw; cv.height = ch;
+    const ctx = cv.getContext('2d', { willReadFrequently: true });
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(imgEl, rect.x, rect.y, rect.w, rect.h, 0, 0, cw, ch);
+    const d = ctx.getImageData(0, 0, cw, ch);
+    const px = d.data, n = cw * ch;
+    const gray = new Uint8Array(n);
+    let lo = 255, hi = 0;
+    for (let i = 0, p = 0; i < n; i++, p += 4) {
+      const g = (0.299 * px[p] + 0.587 * px[p + 1] + 0.114 * px[p + 2]) | 0;
+      gray[i] = g; if (g < lo) lo = g; if (g > hi) hi = g;
+    }
+    // 對比拉伸：低對比畫面若不先拉開，局部門檻同樣分不出前景
+    if (hi > lo) {
+      const scale = 255 / (hi - lo);
+      for (let i = 0; i < n; i++) gray[i] = Math.max(0, Math.min(255, Math.round((gray[i] - lo) * scale)));
+    }
+    const out = [];
+    CONFIG.ocr.adaptive.k.forEach(function (k) {
+      const bin = sauvolaBinarize(gray, cw, ch, CONFIG.ocr.adaptive.window, k, true);
+      const img = ctx.createImageData(cw, ch);
+      let fg = 0;
+      for (let i = 0; i < n; i++) {
+        if (bin[i]) fg++;
+        const v = bin[i] ? 0 : 255;
+        img.data[i * 4] = img.data[i * 4 + 1] = img.data[i * 4 + 2] = v;
+        img.data[i * 4 + 3] = 255;
+      }
+      const ratio = fg / n;
+      if (ratio < 0.002 || ratio > 0.5) return;
+      ctx.putImageData(img, 0, 0);
+      out.push(cv.toDataURL('image/png'));
+    });
+    return out;
+  }
+
   /** 產生多組二值化影像（門檻取自影像自身的亮度百分位，並含兩種極性） */
   function binarizedVariants(imgEl, rect) {
+    // 放大讓小字元有足夠像素。試過為整列範圍設寬度上限以省時間，但實測跑步機主機的
+    // 整列字串在縮小後就讀不出來了——寧可慢，不可讀錯，故維持固定倍率。
     const sc = CONFIG.ocr.upscale;
     const cw = Math.max(8, Math.round(rect.w)), ch = Math.max(8, Math.round(rect.h));
     const src = document.createElement('canvas');
@@ -3069,7 +3248,7 @@ function runSelfTests() {
       if (seen[t]) return; seen[t] = 1;
       ['bright', 'dark'].forEach(function (pol) {
         const cv = document.createElement('canvas');
-        cv.width = cw * sc; cv.height = ch * sc;
+        cv.width = Math.round(cw * sc); cv.height = Math.round(ch * sc);
         const ctx = cv.getContext('2d', { willReadFrequently: true });
         const img = ctx.createImageData(cw, ch);
         let fg = 0;
@@ -3097,23 +3276,25 @@ function runSelfTests() {
    * 對一個或多個範圍做多組辨識並合併投票；kind 為 null 時不限定格式，回傳原始文字統計。
    * 傳入多個範圍（例如原框與收緊後的框）可讓兩者互補，收緊失準時仍有原框的結果。
    */
-  function recognizeRegion(imgEl, rects, kind, onProgress) {
+  function recognizeRegion(imgEl, rects, kind, onProgress, mode, psmList) {
     const rectList = Array.isArray(rects) ? rects : [rects];
     return getOcrWorker(onProgress).then(function (worker) {
       let variants = [];
       rectList.forEach(function (r) {
-        variants = variants.concat(binarizedVariants(imgEl, r));
+        variants = variants.concat(mode === 'adaptive' ? adaptiveVariants(imgEl, r)
+                                                       : binarizedVariants(imgEl, r));
       });
       if (!variants.length) return kind ? null : [];
       // 一律使用含單位字母的白名單：限制成純數字反而會讓小數點被吃掉
       // （實測「2.8 km」在純數字白名單下被讀成「28」）
       const whitelist = '0123456789.:kmiKMIcalCAL';
+      const psms = psmList || CONFIG.ocr.psmModes;
       const results = [];
-      const total = variants.length * CONFIG.ocr.psmModes.length;
+      const total = variants.length * psms.length;
       let done = 0;
       let chain = Promise.resolve();
       variants.forEach(function (url) {
-        CONFIG.ocr.psmModes.forEach(function (psm) {
+        psms.forEach(function (psm) {
           chain = chain.then(function () {
             return worker.setParameters({ tessedit_char_whitelist: whitelist, tessedit_pageseg_mode: psm })
               .then(function () { return worker.recognize(url); })
@@ -3140,82 +3321,132 @@ function runSelfTests() {
   }
 
   /** 自動掃描整張照片：偵測數值群組 → 逐一辨識 → 依格式歸類 */
-  function autoScan(imgEl, onProgress) {
-    onProgress && onProgress('分析照片中…');
-    let groups;
-    try { groups = detectValueGroups(imgEl); }
-    catch (e) { groups = []; }
-    if (!groups.length) return Promise.resolve({ groups: [], found: {} });
+  function autoScan(imgEl, onProgress, mode) {
+    onProgress && onProgress(mode === 'adaptive' ? '改用局部對比重新辨識…' : '分析照片中…');
+    const cfg = CONFIG.ocr.detect;
+    let det;
+    try { det = detectValueGroups(imgEl); }
+    catch (e) { det = { groups: [], rows: [] }; }
+    let groups = det.groups;
+    // 整列辨識是主力：數值緊密排列時（如 Nike Run Club）切分必然出錯，
+    // 整列一次辨識才拿得到完整字串，再交由 extractReadouts 拆解。
+    const wholeRows = det.rows;
+    if (!groups.length && !wholeRows.length) return Promise.resolve({ groups: [], found: {} });
 
     const nw = imgEl.naturalWidth, nh = imgEl.naturalHeight;
-    const out = [];
+    const out = [];                    // 逐值區域的辨識結果（供手動指派）
+    const rowsOut = [];                // 整列辨識結果；短路成功時用它當清單
     const found = {};
     const pooled = {};                 // 跨群組匯總擷取到的讀數
-    // 整列聯集：數值緊密排列時（如 Nike Run Club）切分必然出錯，
-    // 但整列一次辨識可取得完整字串，再交由 extractReadouts 拆解。
-    if (groups.length >= 1) {
-      let rx0 = Infinity, ry0 = Infinity, rx1 = -Infinity, ry1 = -Infinity;
-      groups.forEach(function (g) {
-        if (g.x0 < rx0) rx0 = g.x0; if (g.x1 > rx1) rx1 = g.x1;
-        if (g.y0 < ry0) ry0 = g.y0; if (g.y1 > ry1) ry1 = g.y1;
+
+    // 上限保護：每個區域都要跑數個前處理變體，區域一多手機端就會等到不耐煩。
+    // 依「列」輪流取字元最多的群組，確保每列都留得下來，再砍掉尾巴；
+    // 最後還原成原本的左至右／上至下順序，讓面板清單與照片對得起來。
+    if (groups.length > cfg.maxRegions) {
+      const order = new Map();
+      groups.forEach(function (g, i) { order.set(g, i); });
+      const byRowList = {};
+      groups.forEach(function (g) { (byRowList[g.row || 0] = byRowList[g.row || 0] || []).push(g); });
+      const keys = Object.keys(byRowList);
+      keys.forEach(function (k) {
+        byRowList[k].sort(function (a, b) { return b.glyphs - a.glyphs; });
       });
-      groups = groups.concat([{ x0: rx0, y0: ry0, x1: rx1, y1: ry1, glyphs: 0, wholeRow: true }]);
+      const picked = [];
+      for (let d = 0; picked.length < cfg.maxRegions; d++) {
+        let any = false;
+        for (let i = 0; i < keys.length && picked.length < cfg.maxRegions; i++) {
+          const list = byRowList[keys[i]];
+          if (d < list.length) { picked.push(list[d]); any = true; }
+        }
+        if (!any) break;
+      }
+      picked.sort(function (a, b) { return order.get(a) - order.get(b); });
+      groups = picked;
     }
 
-    let chain = Promise.resolve();
-    groups.forEach(function (gp, i) {
-      chain = chain.then(function () {
-        onProgress && onProgress(gp.wholeRow ? '整列複核中…'
-                                               : '辨識第 ' + (i + 1) + ' / ' + groups.length + ' 個數值…');
-        const rect = { x: gp.x0 * nw, y: gp.y0 * nh, w: (gp.x1 - gp.x0) * nw, h: (gp.y1 - gp.y0) * nh };
-        return recognizeRegion(imgEl, rect, null, null).then(function (results) {
-          // 統計各文字出現次數，再依格式歸類
-          const tally = {};
-          results.forEach(function (r) {
-            const t = String(r.text || '').replace(/\s+/g, '');
-            if (!t) return;
-            if (!tally[t]) tally[t] = { text: t, votes: 0, confSum: 0 };
-            tally[t].votes++; tally[t].confSum += Number(r.confidence) || 0;
-          });
-          const ranked = Object.keys(tally).map(function (k) {
-            const x = tally[k];
-            return { text: x.text, votes: x.votes, confidence: x.confSum / x.votes,
-                     cls: classifyReadout(x.text) };
-          }).sort(function (a, b) { return b.votes - a.votes || b.confidence - a.confidence; });
-
-          // 逐一擷取字串中的讀數：版面把多個數值黏在一起時，切分無法解決，擷取才行
-          results.forEach(function (r) {
-            extractReadouts(r.text).forEach(function (x) {
-              const key = x.kind + '|' + x.value + '|' + (x.unit || '');
-              if (!pooled[key]) pooled[key] = { item: x, votes: 0 };
-              pooled[key].votes++;
-              pooled[key].item.votes = pooled[key].votes;
+    /**
+     * 辨識一批區域，把讀數併入 pooled，並更新 found／面板清單。
+     * stopWhen 每辨識完一個區域檢查一次，回傳 true 就不再往下跑。
+     */
+    const scan = function (list, label, stopWhen) {
+      let chain = Promise.resolve();
+      let stop = false;
+      list.forEach(function (gp, i) {
+        chain = chain.then(function () {
+          if (stop) return;
+          onProgress && onProgress(label + ' ' + (i + 1) + ' / ' + list.length + '…');
+          const rect = { x: gp.x0 * nw, y: gp.y0 * nh, w: (gp.x1 - gp.x0) * nw, h: (gp.y1 - gp.y0) * nh };
+          // 整列用「單行」模式即可，不必再跑「單字」模式，可省一半辨識次數
+          const psms = gp.wholeRow ? ['7'] : null;
+          return recognizeRegion(imgEl, rect, null, null, mode, psms).then(function (results) {
+            // 統計各文字出現次數，再依格式歸類
+            const tally = {};
+            results.forEach(function (r) {
+              const t = String(r.text || '').replace(/\s+/g, '');
+              if (!t) return;
+              if (!tally[t]) tally[t] = { text: t, votes: 0, confSum: 0 };
+              tally[t].votes++; tally[t].confSum += Number(r.confidence) || 0;
             });
-          });
-          const best = ranked.filter(function (r) {
-            return r.cls.kind === 'time' || r.cls.kind === 'distance';
-          })[0] || ranked[0] || null;
-          if (!gp.wholeRow) {
-            out.push({ box: gp, best: best, ranked: ranked.slice(0, 4), total: results.length });
-          }
-          if (best && (best.cls.kind === 'time' || best.cls.kind === 'distance')) {
-            const k = best.cls.kind;
-            if (!found[k] || best.votes > found[k].votes) {
-              found[k] = { value: best.cls.value, unit: best.cls.unit,
-                           votes: best.votes, total: results.length };
-              // 同群組內同類別的候選，供後續交叉驗證
-              found[k + 'Cands'] = ranked.filter(function (r) { return r.cls.kind === k; })
-                .map(function (r) { return { value: r.cls.value, votes: r.votes, confidence: r.confidence }; });
+            const ranked = Object.keys(tally).map(function (k) {
+              const x = tally[k];
+              return { text: x.text, votes: x.votes, confidence: x.confSum / x.votes,
+                       cls: classifyReadout(x.text) };
+            }).sort(function (a, b) { return b.votes - a.votes || b.confidence - a.confidence; });
+
+            // 逐一擷取字串中的讀數：版面把多個數值黏在一起時，切分無法解決，擷取才行
+            results.forEach(function (r) {
+              extractReadouts(r.text).forEach(function (x) {
+                const key = x.kind + '|' + x.value + '|' + (x.unit || '');
+                if (!pooled[key]) pooled[key] = { item: x, votes: 0 };
+                pooled[key].votes++;
+                pooled[key].item.votes = pooled[key].votes;
+              });
+            });
+            const best = ranked.filter(function (r) {
+              return r.cls.kind === 'time' || r.cls.kind === 'distance';
+            })[0] || ranked[0] || null;
+            (gp.wholeRow ? rowsOut : out)
+              .push({ box: gp, best: best, ranked: ranked.slice(0, 4), total: results.length });
+            if (best && (best.cls.kind === 'time' || best.cls.kind === 'distance')) {
+              const k = best.cls.kind;
+              if (!found[k] || best.votes > found[k].votes) {
+                found[k] = { value: best.cls.value, unit: best.cls.unit,
+                             votes: best.votes, total: results.length };
+                // 同群組內同類別的候選，供後續交叉驗證
+                found[k + 'Cands'] = ranked.filter(function (r) { return r.cls.kind === k; })
+                  .map(function (r) { return { value: r.cls.value, votes: r.votes, confidence: r.confidence }; });
+              }
             }
-          }
+            if (stopWhen && stopWhen()) stop = true;
+          });
         });
       });
-    });
-    return chain.then(function () {
-      // 以配速交叉驗證，決定最終的距離與時長
-      const items = Object.keys(pooled)
+      return chain;
+    };
+
+    /** 目前累積的讀數（票數高者優先） */
+    const poolItems = function () {
+      return Object.keys(pooled)
         .sort(function (a, b) { return pooled[b].votes - pooled[a].votes; })
         .map(function (k) { return pooled[k].item; });
+    };
+
+    // 先跑整列：實測三張參考照片（跑步機、Nike、Garmin）都是靠整列字串解出來的，
+    // 逐一數值反而多是雜訊。整列若已能交叉驗證出距離與時長，就不必再跑逐值辨識，
+    // 手機端可少等數十秒；解不出來時才回頭逐值掃描，並保留清單供手動指派。
+    return scan(wholeRows, '整列辨識').then(function () {
+      // 只有「距離與時長都直接讀到，且第三個數值（配速）獨立驗證通過」才敢跳過逐值
+      // 掃描。少了配速這道印證，整列讀到的數字可能只是別的欄位——實測 Garmin 主機
+      // 曾把 7.7 當成距離、配上 22:19 得出 20.7 km/hr，形式合法但其實讀錯了。
+      const r = resolveReadouts(poolItems());
+      if (r && r.paceConfirmedBy && !r.distanceDerived && !r.derivedFromPace) return null;
+      // 逐值階段不做提早收工：試過「答案連續兩輪不變就停」，但整列階段讀錯時答案
+      // 一開始就是穩定的錯的（Garmin 的 7.7），提早停反而定死了錯誤答案。
+      // 成本改用 maxRegions 控制。
+      return scan(groups, '辨識數值');
+    }).then(function () {
+      // 以配速交叉驗證，決定最終的距離與時長
+      const items = poolItems();
       const resolved = resolveReadouts(items);
       if (resolved) {
         const votesOf = function (kind, value) {
@@ -3229,7 +3460,8 @@ function runSelfTests() {
         found.time = { value: resolved.duration, votes: votesOf('duration', resolved.duration), total: 0 };
         found.resolved = resolved;
       }
-      return { groups: out, found: found, extracted: items };
+      // 短路成功時 out 是空的，改列出整列讀到的字串，使用者仍看得到框與內容
+      return { groups: out.length ? out : rowsOut, found: found, extracted: items };
     });
   }
 
@@ -3391,17 +3623,25 @@ function runSelfTests() {
       const btn = ov.querySelector('#ocrAuto');
       btn.disabled = true; runBtn.disabled = true;
       prog.textContent = '準備中…';
+      // 第一輪用快速的全域門檻；解不出結果時再以局部對比重試一次
       autoScan(img, function (m) { prog.textContent = m; })
+        .then(function (res) {
+          if (res.found && res.found.resolved) return res;
+          prog.textContent = '第一輪未能判定，改用局部對比重新辨識…';
+          return autoScan(img, function (m) { prog.textContent = m; }, 'adaptive')
+            .then(function (r2) { return (r2.found && r2.found.resolved) ? r2 : res; });
+        })
         .then(function (res) {
           btn.disabled = false;
           drawBoxes(res.groups);
           const list = ov.querySelector('#ocrList');
-          if (!res.groups.length) {
+          if (!res.groups.length && !(res.found && res.found.resolved)) {
             prog.textContent = '找不到明顯的數字區域。請改用下方手動框選。';
             list.innerHTML = ''; return;
           }
           // 逐一列出偵測結果，讓使用者可自行指派
-          list.innerHTML = '<p class="faint" style="margin:8px 0 4px">偵測到 ' + res.groups.length +
+          list.innerHTML = !res.groups.length ? '' :
+            '<p class="faint" style="margin:8px 0 4px">偵測到 ' + res.groups.length +
             ' 個數值，可點選指派：</p>' + res.groups.map(function (g, i) {
               const txt = g.best ? g.best.text : '（無法辨識）';
               const kindZh = g.best ? ({ time: '時間', distance: '距離', elevation: '高度',
