@@ -1043,7 +1043,9 @@ svg.chart{width:100%;height:auto;display:block}
         <li><strong>優先用「✨ 自動抓取數字」</strong>：不必框選，系統會自己找出照片上的數值群組、辨識並歸類。偵測到的區域會用方框標在照片上，可直接核對；若歸類不對，可從清單自行指派。</li>
         <li><strong>抓不到時才手動框選</strong>：先選欄位，再框住該數字。框選範圍會自動收緊到字元邊界，框得稍鬆也沒關係。</li>
         <li><strong>結果一律先顯示、不自動寫入</strong>：辨識值會填在可編輯欄位中，並標示「幾次辨識中有幾次得到同一結果」。按下「套用到表單」才會進入紀錄。</li>
-        <li><strong>票數低會以紅字警示</strong>：例如「僅 1/8 次辨識出 17:12」代表 8 回合中只有 1 回合讀出此值，此時<strong>務必自行核對照片</strong>。</li>
+        <li><strong>證據不足會以紅字警示</strong>：分母是<strong>實際辨識次數</strong>，例如「20 次辨識中只有 2 次讀出 27:44」代表 20 回合裡只有 2 回合讀出此值，其餘什麼都沒讀到，此時<strong>務必自行核對照片</strong>。</li>
+        <li><strong>只讀到距離或只讀到時間時，不會宣稱成功</strong>：換算兩項缺一不可，而且單獨出現的低票數值多半是誤讀（實測曾把 Garmin 主機最後一列的「當量 9.4」當成距離），因此不會填入欄位。</li>
+        <li><strong>讀不出來時會給拍攝建議</strong>：讀不出來多半是螢幕反光蓋住數字，換個角度重拍通常比重試有效。</li>
         <li><strong>首次使用需下載約 9 MB 辨識模型</strong>（自本站託管，非第三方服務），之後由瀏覽器快取。若無網路或載入失敗，會顯示提示，此時手動輸入即可，其餘功能不受影響。</li>
       </ul>
       <p>二值化門檻取自<strong>照片自身的亮度百分位</strong>而非固定數值，因此能適應不同跑步機與光線；每個範圍以多組門檻與版面模式辨識後<strong>投票</strong>，單一回合的輸出不足以採信。</p>
@@ -1262,7 +1264,7 @@ svg.chart{width:100%;height:auto;display:block}
     </div>
 
     <div class="card">
-      <h2>驗收測試（TC-1 ~ TC-9）</h2>
+      <h2>驗收測試</h2>
       <button class="btn secondary small" id="btnRunTests">執行自我測試</button>
       <div id="testOut" style="margin-top:12px"></div>
     </div>
@@ -1425,6 +1427,7 @@ const CONFIG = {
     detect: { workWidth: 900, percentiles: [98, 95, 92, 88, 84],
               minHeightFrac: 0.025, maxHeightFrac: 0.22, maxRows: 6, maxRegions: 8 },
     speedBandKmh: [3, 25],
+    confidence: { minVotes: 2, minAgreement: 0.25 },
     // 後備：光線不均、低對比的主機照片改用 Sauvola 局部門檻
     adaptive: { upscale: 4, window: 61, k: [0.15, 0.25] },
     mileToKm: 1.609344
@@ -1811,7 +1814,7 @@ function reconcileReadouts(distCands, timeCands) {
  * results: [{ text, confidence }]。回傳 null 表示沒有任何合格候選。
  * 採「出現次數優先、信心度次之」，單一次結果不足以採信。
  */
-function pickOcrCandidate(results, kind) {
+function pickOcrCandidate(results, kind, attempts) {
   const tally = {};
   (results || []).forEach(function (r) {
     const v = normalizeOcrText(r && r.text);
@@ -1828,10 +1831,30 @@ function pickOcrCandidate(results, kind) {
   list.sort(function (a, b) {
     return b.votes - a.votes || b.confidence - a.confidence;
   });
+  // total 是「讀出這個型別的次數」，attempts 是實際跑過的辨識次數。
+  // 兩者必須分開：只用 total 當分母會把「10 次裡只有 2 次讀出東西、那 2 次一致」
+  // 顯示成「2/2 次一致」，看起來像百分之百同意，其實證據很薄。
   return { value: list[0].value, votes: list[0].votes,
-           total: (results || []).length, confidence: list[0].confidence,
+           total: (results || []).length,
+           attempts: attempts || (results || []).length,
+           confidence: list[0].confidence,
            alternatives: list.slice(1, 3).map(function (x) { return x.value; }),
            candidates: list };
+}
+
+/**
+ * 判斷一個 OCR 讀數的證據夠不夠。votes 是讀出同一個值的次數，attempts 是實際
+ * 跑過的辨識次數（含那些什麼都沒讀出來的）。兩個都要看：只有 1 票代表多數回合
+ * 並不同意；票數雖然彼此一致，但佔實際次數的比例太低，代表多數前處理變體根本
+ * 沒產生可用輸出，同樣不足以採信。
+ */
+function readingConfidence(votes, attempts) {
+  const v = Number(votes) || 0;
+  const n = Math.max(1, Number(attempts) || 0);
+  const c = CONFIG.ocr.confidence;
+  if (v < c.minVotes) return { ok: false, reason: 'fewVotes', votes: v, attempts: n };
+  if (v / n < c.minAgreement) return { ok: false, reason: 'lowAgreement', votes: v, attempts: n };
+  return { ok: true, votes: v, attempts: n };
 }
 
 /**
@@ -2237,6 +2260,30 @@ function runSelfTests() {
       actual: '天數=' + s.days + '（' + (s.daysOk ? '達標' : '未達標') + '）、缺漏肌群=' + (missingZh || '無') + ' → 肌力' + (s.met ? '達標' : '未達標'),
       pass: s.days === 2 && s.daysOk === true && s.groupsOk === false && s.met === false &&
             s.missing.length === 1 && s.missing[0].id === 'abdomen' });
+  })();
+
+  // TC-21：讀數證據強度（分母須為實際辨識次數，不得只算「讀出此型別的次數」）
+  (function () {
+    const c = CONFIG.ocr.confidence;
+    // 實測：Garmin 反光照片框選時間欄，10 次辨識只有 2 次讀出東西、兩次都是 27:44
+    // （正確是 27:14）。舊寫法分母用「讀出時間的次數」，會顯示成「2/2 次一致」。
+    const glare = readingConfidence(2, 10);
+    const good = readingConfidence(6, 10);      // 多數回合一致
+    const thin = readingConfidence(3, 10);      // 票數不多但比例足夠
+    const lone = readingConfidence(1, 10);      // 只有一次讀出 → 雜訊
+    // pickOcrCandidate 須把實際辨識次數帶出來，且與「讀出此型別的次數」分開
+    const picked = pickOcrCandidate(
+      [{ text: '27:44', confidence: 80 }, { text: '27:44', confidence: 78 }], 'time', 10);
+    T.push({ id: 'TC-21', name: '讀數證據強度（票數 + 實際辨識次數）',
+      expected: '6/10 通過；3/10 通過；2/10 不通過（比例 0.2 < ' + c.minAgreement +
+                '）；1/10 不通過（票數 < ' + c.minVotes + '）；pickOcrCandidate 回傳 votes=2、total=2、attempts=10',
+      actual: '6/10 ' + (good.ok ? '通過' : '不通過') + '；3/10 ' + (thin.ok ? '通過' : '不通過') +
+              '；2/10 ' + (glare.ok ? '通過' : '不通過（' + glare.reason + '）') +
+              '；1/10 ' + (lone.ok ? '通過' : '不通過（' + lone.reason + '）') +
+              '；pick votes=' + picked.votes + '、total=' + picked.total + '、attempts=' + picked.attempts,
+      pass: good.ok === true && thin.ok === true && glare.ok === false &&
+            glare.reason === 'lowAgreement' && lone.ok === false && lone.reason === 'fewVotes' &&
+            picked.votes === 2 && picked.total === 2 && picked.attempts === 10 });
   })();
 
   // TC-20：直式清單版面與「自洽但不可能」的組合（Garmin 主機實測）
@@ -3325,7 +3372,7 @@ function runSelfTests() {
             const cls = classifyReadout(String(r.text || '').replace(/\s+/g, ''));
             if (cls.kind === kind) mapped.push({ text: cls.value, confidence: r.confidence });
           });
-          return pickOcrCandidate(mapped, kind);
+          return pickOcrCandidate(mapped, kind, results.length);
         });
     });
   }
@@ -3476,6 +3523,14 @@ function runSelfTests() {
   }
 
   /** 開啟辨識介面：框選 → 辨識 → 確認後才套用 */
+  /**
+   * 辨識失敗時給的拍攝建議。這是相機功能，失敗多半不是演算法問題而是拍攝條件：
+   * 實測讀不出來的照片都是「螢幕反光蓋過字」——天花板燈、窗簾條紋、人影映在面板上，
+   * 反光處比字還亮，任何門檻都會先框到反光。這類情況重拍一張遠比調參數有效。
+   */
+  const PHOTO_TIP = '<br><span class="faint">拍攝建議：讓數字盡量占滿畫面、鏡頭正對螢幕（避開燈光與人影的反光）、' +
+    '對焦後再按快門。螢幕反光蓋住數字時，換個角度重拍通常就讀得出來。</span>';
+
   function openOcrPanel() {
     const src = ocrFullResUrl || pendingPhoto;
     if (!src) { toast('請先加入照片'); return; }
@@ -3575,7 +3630,21 @@ function runSelfTests() {
       const r = sameRect ? [raw] : [refined, raw];
       runBtn.disabled = true;
       prog.textContent = '準備中…';
-      recognizeRegion(img, r, kind, function (m) { prog.textContent = m; })
+      // 先跑全域門檻的變體；證據不足時再用局部對比（Sauvola）重跑一輪。
+      // 自動掃描早就有這道重試，手動框選卻沒有——框選是自動抓不到時的備援，
+      // 反而少一種前處理並不合理。兩輪取證據較強者。
+      const onMsg = function (m) { prog.textContent = m; };
+      recognizeRegion(img, r, kind, onMsg)
+        .then(function (res) {
+          if (res && readingConfidence(res.votes, res.attempts).ok) return res;
+          prog.textContent = '證據不足，改用局部對比重新辨識…';
+          return recognizeRegion(img, r, kind, onMsg, 'adaptive').then(function (alt) {
+            if (!alt) return res;
+            if (!res) return alt;
+            return (alt.votes / Math.max(1, alt.attempts)) > (res.votes / Math.max(1, res.attempts))
+              ? alt : res;
+          });
+        })
         .then(function (res) {
           runBtn.disabled = false;
           const isDist = kind === 'distance';
@@ -3589,7 +3658,7 @@ function runSelfTests() {
           found[kind] = res.value;
           field.value = res.value;
           cands[kind] = res.candidates || null;
-          vote.textContent = res.votes + '/' + res.total + ' 票';
+          vote.textContent = res.votes + '/' + res.attempts + ' 次';
           // 若另一欄已有候選，交叉驗證後可能改採物理上唯一可行的組合
           const rec = reconcileAndFill();
           if (rec && rec.changed) {
@@ -3598,17 +3667,18 @@ function runSelfTests() {
               ' km/hr）。原本票數最高的組合會得出不可能的速度，已排除。請對照照片確認。';
             return;
           }
-          // 票數低代表多數辨識回合並未得到同一結果，必須明講而非默默採用
-          const weak = res.votes <= 1;
-          vote.style.color = weak ? 'var(--red)' : 'var(--text-faint)';
-          field.style.borderColor = weak ? 'var(--red)' : '';
-          prog.innerHTML = weak
-            ? '<strong style="color:var(--red)">僅 ' + res.votes + '/' + res.total +
-              ' 次辨識出「' + esc(res.value) + '」，可靠度低，請務必核對照片。</strong>' +
-              (res.alternatives.length ? '　其他候選：' + esc(res.alternatives.join('、')) : '')
-            : '辨識完成：' + esc(res.value) + '（' + res.votes + '/' + res.total + ' 次一致）' +
-              (res.alternatives.length ? '　其他候選：' + esc(res.alternatives.join('、')) : '') +
-              '　請確認是否與照片一致。';
+          // 證據不足時必須明講而非默默採用。分母一律用「實際辨識次數」，
+          // 不是「讀出這個型別的次數」——否則 10 次只有 2 次讀出東西、那 2 次剛好
+          // 一致，會顯示成「2/2 次一致」，看起來像百分之百同意。
+          const conf = readingConfidence(res.votes, res.attempts);
+          vote.style.color = conf.ok ? 'var(--text-faint)' : 'var(--red)';
+          field.style.borderColor = conf.ok ? '' : 'var(--red)';
+          const alt = res.alternatives.length ? '　其他候選：' + esc(res.alternatives.join('、')) : '';
+          prog.innerHTML = conf.ok
+            ? '辨識完成：' + esc(res.value) + '（' + res.attempts + ' 次辨識中 ' +
+              res.votes + ' 次讀出此值）' + alt + '　請確認是否與照片一致。'
+            : '<strong style="color:var(--red)">' + res.attempts + ' 次辨識中只有 ' + res.votes +
+              ' 次讀出「' + esc(res.value) + '」，證據不足，請務必核對照片再套用。</strong>' + alt + PHOTO_TIP;
         })
         .catch(function (e) {
           runBtn.disabled = false;
@@ -3698,17 +3768,39 @@ function runSelfTests() {
             return;
           }
           const rec = reconcileAndFill();
-          const got = [];
           if (rec) {
-            got.push('距離 ' + rec.fix.distance + ' km');
-            got.push('時間 ' + rec.fix.time);
-          } else {
-            if (f.distance) got.push('距離 ' + f.distance.value + ' km');
-            if (f.time) got.push('時間 ' + f.time.value);
+            prog.innerHTML = '自動抓到：<strong>距離 ' + esc(rec.fix.distance) + ' km、時間 ' +
+              esc(rec.fix.time) + '</strong>　請對照照片確認後再套用。';
+            return;
           }
-          prog.innerHTML = got.length
-            ? '自動抓到：<strong>' + esc(got.join('、')) + '</strong>　請對照照片確認後再套用。'
-            : '<strong style="color:var(--red)">偵測到數字但無法確定哪個是距離／時間，請由上方清單自行指派，或手動框選。</strong>';
+
+          // 到這裡代表沒能湊出「距離 + 時間」的可用組合。
+          // 換算兩項缺一不可，所以只讀到其中一項時絕不能宣稱「自動抓到」：實測 Garmin
+          // 主機的照片曾把最後一列的「當量 9.4」當成距離（10 次只讀出 1 次），卻照樣
+          // 顯示成功並填進欄位——使用者補上時間按下套用，就把錯的距離存進紀錄了。
+          const partial = [];
+          if (f.distance) partial.push({ box: '#ocrDist', vote: '#ocrDistVote',
+                                         label: '距離', shown: f.distance.value + ' km', v: f.distance });
+          if (f.time) partial.push({ box: '#ocrTime', vote: '#ocrTimeVote',
+                                     label: '時間', shown: f.time.value, v: f.time });
+          if (!partial.length) {
+            prog.innerHTML = '<strong style="color:var(--red)">照片上的數字讀不出來。</strong>' +
+              '可從上方清單指派、改用手動框選單一數字，或直接在下方欄位輸入。' + PHOTO_TIP;
+            return;
+          }
+          const desc = partial.map(function (x) {
+            // 證據不足者只當線索列出、不填進欄位，免得被連同另一項一起套用
+            const conf = readingConfidence(x.v.votes, x.v.total);
+            const field = ov.querySelector(x.box), vote = ov.querySelector(x.vote);
+            field.value = conf.ok ? x.v.value : '';
+            field.style.borderColor = '';
+            vote.textContent = conf.ok ? x.v.votes + '/' + x.v.total + ' 次' : '';
+            vote.style.color = 'var(--text-faint)';
+            return x.label + ' ' + x.shown + '（' + x.v.total + ' 次辨識中 ' + x.v.votes + ' 次' +
+                   (conf.ok ? '' : '，證據不足，未填入') + '）';
+          }).join('；');
+          prog.innerHTML = '<strong style="color:var(--red)">沒有同時讀出距離與時間，無法自動換算。</strong>' +
+            '只讀到：' + esc(desc) + '。請確認後由上方清單指派，或直接在下方欄位輸入你在螢幕上看到的數字。' + PHOTO_TIP;
         })
         .catch(function (e) {
           btn.disabled = false;
