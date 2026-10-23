@@ -88,14 +88,15 @@ npx http-server . -p 8080
 - **MET-minutes**：附 500–1000 參考帶（輔助指標，非達標判準）與本週估計熱量
 - **肌力訓練天數**：本週 X 天 / 目標 ≥2 天
 - **7 大肌群覆蓋圖**：未覆蓋者以灰階顯示，並列出缺漏肌群
-- **綜合達標燈號**：🟢 / 🟡 / 🔴
+- **綜合達標燈號**：🟢 / 🟡 / 🔴。**65 歲以上**為三軌（有氧、肌力、多元運動），三項皆達標才亮綠燈
+- **多元運動（65 歲以上才顯示）**：本週天數 / 目標 ≥3 天，列出已算數的日期，並說明有勾平衡但當天沒有中強度活動而未計入的日子。見 3.16
 - **本週還差多少**：把燈號翻成下一步。有氧還差幾 MEM、換成快走或跑步各約幾分鐘、本週剩下幾天平均每天要多少；肌力還差幾天、缺哪些肌群。肌力日須在不同日期，**剩餘天數不夠時明講「本週已來不及」**，不照樣叫人去練。已結束的週改為「該週差距」，不給每日配速。見 3.15
 - 可切換檢視上週／下週
 
 ### ② 新增紀錄
 
 - 日期、活動類別、時長（分鐘）
-- **38 個內建活動項目**，分 13 類：跑步、游泳、步行、自行車、攀岩、肌力、水域、間歇訓練、器械有氧、徒手訓練、球類、舞蹈與格鬥、低強度
+- **39 個內建活動項目**（含太極拳／氣功），分 13 類：跑步、游泳、步行、自行車、攀岩、肌力、水域、間歇訓練、器械有氧、徒手訓練、球類、舞蹈與格鬥、低強度
 - 依類別動態顯示欄位：
   - **跑步** → 速度（km/hr）／配速（min/km）雙向連動，即時顯示由 ACSM 方程式算出的 MET
   - **跑步機讀數**（跑步專屬）→ 可拍照或匯入跑步機螢幕照片，填入**距離 + 時間**後自動換算速度、配速、時長與 MET；時間分成**「分」與「秒」兩格**輸入（見 3.8）
@@ -481,6 +482,40 @@ const targetHR  = hrRest + intensityPercent * (hrMax - hrRest);   // Karvonen
 注意：中強度以上的肌力訓練分鐘數本來就計入 MEM（見 3.14），所以練了重訓後有氧「還差」也會跟著減少，這是既有規則，不是重複計算。
 
 
+### 3.16 65 歲以上：多元運動 `[指引慣例]` + `[實作約定]`
+
+**指引原文**（WHO 2020，取自 PubMed Central 全文）：*older adults should do varied multicomponent physical activity at moderate or greater intensity on 3 or more days a week in order to enhance functional capacity and prevent falls.* 2010 年版只對行動不便者提出，2020 年版擴大到所有長者。
+
+| 證據 | GRADE |
+|---|---|
+| 平衡與功能性運動降低跌倒發生率 | **High** |
+| 多元運動（平衡、肌力、耐力、步態、身體功能訓練）可能降低跌倒傷害 | **Moderate** |
+| 多種運動並行的課程可能對骨骼健康與預防骨質疏鬆有顯著效果 | **Moderate** |
+| 這項建議本身的強度（Strong／Conditional） | provided sources 未提供 |
+
+**啟用條件**：設定年齡 ≥ `CONFIG.olderAdults.ageMin`（65）。未滿 65 歲時所有行為與先前**完全相同**（`summarizeWeek` 的第三參數不傳或 < 65 時不產生 `multicomponent`，`overallSignal` 只傳兩參數時走原本的雙軌分支）。
+
+**一天要算數**（`multicomponentStatus()`，`[實作約定]`——WHO 未規定逐日判定方式）：
+
+1. 當天至少一筆紀錄 `balance: true`（表單「含平衡訓練」）
+2. 當天有中強度以上的活動：平衡紀錄本身 ≥ 3.0 MET、同日另有 moderate 以上的紀錄、間歇課表有中／高強度區段，或同日有 moderate 以上的肌力訓練
+
+對應 WHO 的兩個條件：「多元」（平衡結合其他運動）與「中強度以上」。單做輕度平衡練習（約 2 MET）不算；同一天另外快走就算。
+
+**三軌燈號**：綠 = 三項皆達標；黃 = 三項中 1–2 項；紅 = 皆未達標。多元運動和有氧、肌力一樣**不可互相折抵**。達標軌跡的「連續週數」改以綠燈判定，雙軌時與原本的「有氧 && 肌力」完全等價，三軌時自動納入多元運動。
+
+**預設勾選平衡**：有氧舞蹈（WHO 明列跳舞兼具有氧與平衡）、新增的**太極拳／氣功（一般）**（`[實作約定]`）。太極 MET 3.3 取自 2024 Adult Compendium 代碼 15670（舊版曾列 3.0 或 4.0）。
+
+**已知限制——MET 表不是給長者用的**：2024 Adult Compendium 依其摘要「tailored for adults 19–59 years of age by removing data from those ≥60 years」。另有 Older Adult Compendium（60 歲以上、99 項活動），以 **1 MET = 2.7 mL/kg/min**（而非 3.5）計算，以反映長者較低的靜息代謝率。本工具**尚未採用**長者版數值；說明頁建議 65 歲以上使用者搭配主觀強度（說話測試／RPE）。
+
+出處（皆取自 PubMed）：
+- Bull FC, et al. World Health Organization 2020 guidelines on physical activity and sedentary behaviour. *Br J Sports Med.* 2020;54(24):1451-1462. [DOI: 10.1136/bjsports-2020-102955](https://doi.org/10.1136/bjsports-2020-102955)
+- Herrmann SD, et al. 2024 Adult Compendium of Physical Activities. *J Sport Health Sci.* 2024;13(1):6-12. [DOI: 10.1016/j.jshs.2023.10.010](https://doi.org/10.1016/j.jshs.2023.10.010)
+- Willis EA, et al. Older Adult Compendium of Physical Activities. *J Sport Health Sci.* 2024;13(1):13-17. [DOI: 10.1016/j.jshs.2023.10.007](https://doi.org/10.1016/j.jshs.2023.10.007)
+
+驗證（Chromium 端對端，固定時鐘）：35 歲時完全不顯示；改為 70 歲後表單出現「含平衡訓練」、選太極自動勾選、儀表板出現第三條；太極日算、瑜伽 2.5 + 平衡但無中強度的日子不算並說明原因、瑜伽 + 同日快走算；還差多少多一行；歷史頁多「多元」標籤、連續統計改稱「三項皆達標」；CSV 多 `balance` 欄；卡片上的 ? 跳到說明；改回 40 歲全部消失。
+
+
 ## 4. 實作約定（對應規格第 10 節）
 
 1. **絕對強度 vs 相對強度**：所有分級皆為 absolute MET-based。UI 於「新增紀錄」頁與免責聲明兩處說明此限制，並提示可用 talk test / RPE 覆寫校正為 relative intensity。
@@ -508,6 +543,7 @@ const targetHR  = hrRest + intensityPercent * (hrMax - hrRest);   // Karvonen
 | `hiit` | HIIT 預設課表（熱身／組數／秒數／各段 MET） | 需調整預設課表時 |
 | `fontSizes` | 顯示字級選項（id / 中文名稱 / 倍率） | 需要更大字級或調整級距時 |
 | `photo` | `maxDimPx` / `jpegQuality`（跑步機照片縮圖參數） | 需調整儲存空間與畫質的取捨時 |
+| `olderAdults` | `ageMin`（65）／`multicomponentDays`（3）（WHO 2020 長者多元運動） | WHO 指引改版 |
 | `backup` | `remindDays`（14）／`snoozeDays`（3）／`minRecords`（1）（備份提醒） | 想更頻繁或更少提醒時 |
 | `ocr` | `basePath` / `percentiles` / `psmModes` / `upscale` / `detect`（`percentiles` 候選門檻、`maxRows` 保留列數、`maxRegions` 逐值區域上限）/ `adaptive` / `speedBandKmh` / `confidence`（`minVotes` 2、`minAgreement` 0.25）/ `mileToKm` | 辨識率不佳時可增減百分位組合；`maxRegions` 調小可加快、調大可提高讀到率 |
 | `hr` | Tanaka 係數、水中修正預設值與可調範圍 | 新證據出現時 |
@@ -546,6 +582,7 @@ const targetHR  = hrRest + intensityPercent * (hrMax - hrRest);   // Karvonen
   "isStrength": false,             // 是否計入肌力訓練
   "strengthModerate": true,        // 強度是否達 moderate 以上（false 則不計入覆蓋與天數）
   "muscles": [],                   // ['legs','hips','back','abdomen','chest','shoulders','arms'] 之子集
+  "balance": false,                // 含平衡訓練（僅 65 歲以上記錄；多元運動判定用，見 3.16）
   "note": "",
   "meta": {
     "speedKmh": 9,                 // 跑步：速度
@@ -612,7 +649,7 @@ mem, metMin, kcal, isStrength, strengthModerate, muscles, note
 - **App 內**：開啟 `index.html` → 設定 → 「執行自我測試」，結果以表格呈現
 - **Node**：抽出 `CORE` 區塊後呼叫 `runSelfTests()`（無需任何相依套件）
 
-**執行結果：23 / 23 通過**（於 Node 22 與 Chromium 兩種環境執行，結果一致）
+**執行結果：24 / 24 通過**（於 Node 22 與 Chromium 兩種環境執行，結果一致）
 
 | 案例 | 說明 | 期望值 | 實際執行結果 | 判定 |
 |---|---|---|---|---|
@@ -625,6 +662,7 @@ mem, metMin, kcal, isStrength, strengthModerate, muscles, note
 | **TC-7** | MEM 閾值邊界 | 149 → 未達標；150 → 基本達標；300 → 基本達標；301 → 額外效益 | **未達標 / 基本達標 / 基本達標 / 額外效益** | ✅ PASS |
 | **TC-8** | 肌群覆蓋（週一腿髖背、週四胸肩臂） | 天數達標（2 天）但腹部未覆蓋 → 肌力未達標，UI 標示缺漏肌群 | 天數 = **2**（達標）、缺漏肌群 = **腹部** → 肌力**未達標**；儀表板 7 格覆蓋圖中腹部呈灰階，並顯示「缺漏肌群：腹部（訓練天數已達標）」 | ✅ PASS |
 | **TC-9** | 短時長活動（快走 6.4 km/hr，MET 5.0，7 分鐘） | 正常計入，MEM 貢獻 = 7（不得因 <10 分鐘而排除） | MEM 貢獻 = **7**（moderate，MET-min = 35） | ✅ PASS |
+| **TC-24** | 65 歲以上多元運動（平衡＋中強度同日、三軌燈號） | 輕度平衡單獨 0 天；同日加快走 1 天；太極 3.3 單獨 1 天；平衡與快走不同天 0 天｜同一週：40 歲綠燈且無多元欄；70 歲多元 2 天 → 黃燈「三項中 2 項」；補第 3 天 → 綠燈｜70 歲還差 1 天、剩 3 天來得及｜三週序列中間週未達 → 全部達標 2 週、最長連續 1 | 單獨 **0**、同日 **1**、太極 **1**、不同天 **0**｜40 歲 **green**（多元 **無**）；70 歲 **2** 天 **yellow「三項中 2 項達標」**；補第 3 天 **green**｜還差 **1** 天、**來得及**｜全部達標 **2** 週、最長連續 **1** | ✅ PASS |
 | **TC-23** | 本週還差多少（快走／跑步換算、每日配速、肌力是否來得及） | A：還差 90 ＝ 中強度 90 分或高強度 45 分，剩 5 天每天 18 分；肌力差 1 天、來得及、缺腹部／胸部／肩部／手臂｜B：有氧達標、距額外效益 100；肌力天數夠但缺腹部｜C：只剩 1 天、差 2 個肌力日 → 來不及｜D：已結束週無每日配速 | A：**90＝中 90 或高 45，每天 18**；肌力差 **1** 天、**來得及**、缺 **腹部／胸部／肩部／手臂**｜B：**達標**，距額外 **100**；肌力差 **0** 天、缺 **腹部**｜C：差 **2** 天、**來不及**｜D：每日配速 **null** | ✅ PASS |
 | **TC-22** | 備份提醒時機 | 0 筆不提醒；有紀錄但從未匯出要提醒；3 天前不提醒；滿 14 天要提醒；暫停期間不提醒、暫停過期恢復提醒 | 0 筆 **noRecords**；從未 **提醒**；3 天前 **不提醒**（3 天）；14 天 **提醒**（14 天）；暫停中 **不提醒**；暫停過期 **提醒** | ✅ PASS |
 | **TC-21** | 讀數證據強度（票數 + 實際辨識次數） | 6/10、3/10 通過；2/10 不通過（比例 0.2 < 0.25）；1/10 不通過（票數 < 2）；`pickOcrCandidate` 回傳 votes=2、total=2、attempts=10 | 6/10 **通過**；3/10 **通過**；2/10 **不通過（lowAgreement）**；1/10 **不通過（fewVotes）**；pick votes=**2**、total=**2**、attempts=**10** | ✅ PASS |
@@ -772,6 +810,8 @@ Karvonen(rest 60, 60% HRR)   = 134.1 bpm
 
 ## 10. 已知證據缺口與限制
 
+- **長者多元運動的建議強度**：WHO 2020 全文可取得證據確定性（平衡運動降低跌倒率 High；多元運動降低跌倒傷害 Moderate），但這項建議本身的強度（Strong／Conditional）provided sources 未提供。「同一天平衡＋中強度才算一天」為**實作約定**。
+- **長者的 MET 值**：本工具採 2024 Adult Compendium（19–59 歲，已移除 60 歲以上資料），尚未採用 Older Adult Compendium（60 歲以上，1 MET = 2.7 mL/kg/min，99 項活動）的數值。本次查證無法取得其逐項 MET 表（provided sources 未提供），65 歲以上使用者的強度判定因此可能有偏差，說明頁建議搭配主觀強度。
 - **混合泳姿之 MET 值**：provided sources 未提供官方加權方法。本工具採線性加權為**實作約定**，非實證結論。
 - **技術水準對游泳 MET 之量化修正係數**：provided sources 未提供可套用之公式。本工具僅以文字警語提示，未做數值修正。
 - **水中心率修正之最佳數值**：不同來源給出 −10 至 −15 bpm 之範圍，且菁英族群差距更小（約 −6.7 bpm）。**本工具不對這些數值取平均**，預設採 −12 bpm 並開放使用者調整，同時於說明中並列各來源數值。

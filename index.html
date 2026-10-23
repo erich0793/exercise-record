@@ -473,6 +473,21 @@ svg.chart{width:100%;height:auto;display:block}
       <p class="faint" style="margin:6px 0 0">達標須同時滿足：≥2 個不同日，且 7 大主要肌群全數涵蓋（強度 moderate 以上）。</p>
     </div>
 
+    <!-- 65 歲以上才顯示：WHO 2020 長者建議的多元運動 -->
+    <div class="card hidden" id="multiCard">
+      <h2>多元運動（65 歲以上）<button type="button" class="helpbtn" data-help="h-older" aria-label="多元運動說明">?</button></h2>
+      <div class="row">
+        <div class="big"><span id="multiDays">0</span><small>天 / 目標 ≥3 天</small></div>
+        <div style="text-align:right">
+          <div class="status lv0" id="multiStatus">未達標</div>
+          <div class="faint">WHO 2020 長者建議</div>
+        </div>
+      </div>
+      <div class="bar"><div class="fill" id="multiFill" style="width:0%"></div></div>
+      <p class="muted" id="multiNote" style="margin:10px 0 0"></p>
+      <p class="faint" style="margin:6px 0 0">以平衡與肌力為主、結合多種運動，中強度以上。某天要算數：當天有勾「含平衡訓練」的紀錄，且當天有中強度以上的活動。</p>
+    </div>
+
     <div class="card">
       <h2>本週紀錄</h2>
       <div id="dashRecords"><p class="muted">本週尚無紀錄。</p></div>
@@ -685,6 +700,15 @@ svg.chart{width:100%;height:auto;display:block}
         </div>
       </div>
 
+      <!-- 65 歲以上：多元運動 -->
+      <div class="field hidden" id="modBalance">
+        <div class="check">
+          <input type="checkbox" id="fBalance">
+          <label for="fBalance" style="margin:0;color:var(--text)">含平衡訓練（65 歲以上的多元運動）</label><button type="button" class="helpbtn" data-help="h-older" aria-label="多元運動說明">?</button>
+        </div>
+        <p class="faint" style="margin:4px 0 0">例：太極、跳舞、單腳站、倒退走或側走。當天另有中強度以上的活動（含這筆本身）才算一天。</p>
+      </div>
+
       <div class="field">
         <label for="fNote">備註（選填）<button type="button" class="helpbtn" data-help="h-opt-note" aria-label="備註說明">?</button></label>
         <input type="text" id="fNote" placeholder="例：晨泳、間歇 8×400m">
@@ -760,6 +784,7 @@ svg.chart{width:100%;height:auto;display:block}
         <a href="#h-grade">證據分級宣告</a>
         <a href="#h-gap">證據缺口</a>
         <a href="#h-data">資料保存與備份</a>
+        <a href="#h-older">65 歲以上：多元運動</a>
       </div>
     </div>
 
@@ -960,7 +985,7 @@ svg.chart{width:100%;height:auto;display:block}
       <h4>實務上的四個層級（由簡到繁）</h4>
 
       <p><strong>① 直接選一個現成項目</strong>——最實用，涵蓋九成情況。<br>
-      本工具內建 38 個項目，涵蓋器械有氧、球類、徒手、舞蹈與低強度。找到最接近的那個就好，不必追求完全吻合：查表值本身就有 ±15–20% 的個體誤差，你選「羽球」還是「網球雙打」造成的差異，遠小於這個誤差。</p>
+      本工具內建 39 個項目，涵蓋器械有氧、球類、徒手、舞蹈、太極與低強度。找到最接近的那個就好，不必追求完全吻合：查表值本身就有 ±15–20% 的個體誤差，你選「羽球」還是「網球雙打」造成的差異，遠小於這個誤差。</p>
 
       <p><strong>② HIIT 用「高強度做什麼動作」選單</strong><br>
       間歇訓練的課表欄位提供動作選單（衝刺跑、跳繩、波比、飛輪衝刺⋯⋯），選了就自動帶入 MET。<strong>這是 HIIT 的建議做法</strong>，理由見下方 talk test 的限制。</p>
@@ -1195,6 +1220,40 @@ svg.chart{width:100%;height:auto;display:block}
     </div>
 
     <div class="card">
+      <h2 id="h-older">65 歲以上：多元運動</h2>
+      <p>在設定頁把年齡填 <strong>65 以上</strong>，儀表板會多出第三條達標線，綜合燈號也改為三項皆達標才亮綠燈。</p>
+
+      <h4>WHO 2020 怎麼說</h4>
+      <p>長者除了成人的有氧與肌力建議之外，每週還應做 <strong>3 天以上</strong>「多樣化的多元運動」：以<strong>功能性平衡與肌力訓練</strong>為重點，強度為<strong>中強度以上</strong>，目的是提升身體功能、預防跌倒。</p>
+      <p class="src">原文：<em>older adults should do varied multicomponent physical activity at moderate or greater intensity on 3 or more days a week in order to enhance functional capacity and prevent falls.</em></p>
+      <p>2010 年版只對行動不便的長者提出這項建議；<strong>2020 年版擴大到所有長者</strong>。</p>
+      <p><span class="tag grade">GRADE: High</span> 平衡與功能性運動可降低跌倒發生率。<br>
+         <span class="tag grade">GRADE: Moderate</span> 多元運動（平衡、肌力、耐力、步態與身體功能訓練的組合）可能降低跌倒造成的傷害；多種運動並行的課程可能對骨骼健康與預防骨質疏鬆有顯著效果。</p>
+      <p class="src">出處：Bull FC, Al-Ansari SS, Biddle S, et al. World Health Organization 2020 guidelines on physical activity and sedentary behaviour. <em>Br J Sports Med.</em> 2020;54(24):1451-1462. <a href="https://doi.org/10.1136/bjsports-2020-102955" target="_blank" rel="noopener">DOI: 10.1136/bjsports-2020-102955</a>（取自 PubMed Central 全文）</p>
+
+      <h4>什麼算「多元運動」</h4>
+      <p>WHO 的定義是把有氧、肌力、平衡三種運動<strong>結合在同一次活動裡</strong>。WHO 舉的平衡訓練例子：<strong>倒退走或側走</strong>、<strong>一邊單腳站一邊做上肢肌力動作</strong>（如二頭肌彎舉）；並指出<strong>跳舞同時具有有氧與平衡成分</strong>。</p>
+
+      <h4>本工具怎麼算一天 <code>[實作約定]</code></h4>
+      <p>WHO 沒有規定逐日怎麼判定，本工具的規則是：某一天要算數，須<strong>同時</strong>符合</p>
+      <ol>
+        <li>當天至少一筆紀錄勾選「含平衡訓練」</li>
+        <li>當天有中強度以上的活動——可以是那筆平衡紀錄本身（如太極 3.3 MET），也可以是同一天的快走、重訓等</li>
+      </ol>
+      <p>所以單做輕度的單腳站練習（約 2 MET）不算一天；同一天再去快走 30 分鐘就算。這是為了對應 WHO「多元」與「中強度以上」兩個條件。</p>
+      <p>預設勾選「含平衡訓練」的項目：<strong>有氧舞蹈</strong>（WHO 明列跳舞兼具有氧與平衡）、<strong>太極拳／氣功</strong>（<code>[實作約定]</code>：動作以重心轉移與單腳支撐為主）。其他項目請依實際內容自行勾選，預設也可以取消。</p>
+      <p class="src">太極拳／氣功（一般）的 MET 3.3 取自 2024 Adult Compendium 代碼 15670；舊版曾列為 3.0 或 4.0，版本間有差異。</p>
+
+      <h4>重要限制：MET 表是給 19–59 歲用的</h4>
+      <p>本工具所有查表 MET 都來自 <strong>2024 Adult Compendium</strong>。這一版<strong>特意移除了 60 歲以上受試者的資料</strong>，只適用於 19–59 歲。</p>
+      <p>另有一份 <strong>Older Adult Compendium</strong>（60 歲以上，99 項活動），它把 1 MET 定為每公斤每分鐘 <strong>2.7 mL</strong> 攝氧量（成人版是 3.5），以反映長者較低的靜息代謝率。<strong>本工具目前尚未採用這份長者版數值。</strong></p>
+      <p>實務上建議 65 歲以上的使用者多搭配<strong>主觀強度</strong>（說話測試或 RPE，見「各欄位怎麼填」），以「對自己而言」的費力程度判斷，而不是只看查表 MET。</p>
+      <p class="src">出處：Herrmann SD, et al. 2024 Adult Compendium of Physical Activities. <em>J Sport Health Sci.</em> 2024;13(1):6-12. <a href="https://doi.org/10.1016/j.jshs.2023.10.010" target="_blank" rel="noopener">DOI: 10.1016/j.jshs.2023.10.010</a>；Willis EA, et al. Older Adult Compendium of Physical Activities. <em>J Sport Health Sci.</em> 2024;13(1):13-17. <a href="https://doi.org/10.1016/j.jshs.2023.10.007" target="_blank" rel="noopener">DOI: 10.1016/j.jshs.2023.10.007</a>（皆取自 PubMed）</p>
+
+      <div class="callout"><strong>開始前請先評估自身狀況。</strong>有心血管疾病、骨質疏鬆、平衡障礙或曾經跌倒的長者，開始平衡或中高強度訓練前，請先與醫師或物理治療師討論；平衡練習時旁邊最好有可扶的穩固物品。</div>
+    </div>
+
+    <div class="card">
       <h2 id="h-data">資料保存與備份</h2>
       <p>你的紀錄<strong>只存在這個瀏覽器裡</strong>，不會上傳，也<strong>沒有雲端副本</strong>。這是刻意的設計：不需要帳號、資料不離開你的裝置。代價是保存責任在你身上，下列情況紀錄就會消失：</p>
       <ul>
@@ -1216,6 +1275,8 @@ svg.chart{width:100%;height:auto;display:block}
     <div class="card">
       <h2 id="h-gap">證據缺口與限制</h2>
       <ul>
+        <li><strong>長者多元運動的建議強度</strong>：WHO 2020 全文中可取得證據確定性（平衡運動降低跌倒率 High；多元運動降低跌倒傷害 Moderate），但這項建議本身的強度（Strong／Conditional）provided sources 未提供。「同一天平衡＋中強度才算一天」為本工具的 <code>[實作約定]</code>。</li>
+        <li><strong>長者的 MET 值</strong>：本工具採 2024 Adult Compendium（19–59 歲），尚未採用 Older Adult Compendium（60 歲以上，1 MET = 2.7 mL/kg/min）的數值，65 歲以上使用者的強度判定因此可能有偏差，建議搭配主觀強度。</li>
         <li><strong>抱石的官方肌群對應</strong>：WHO 2020 與 US PAG 2018 均未提供攀岩對應哪些主要肌群的官方分類。本工具的建議勾選組合為<code>[實作約定]</code>，依據肌力適應與 EMG 研究推得，非指引結論。</li>
         <li><strong>休閒抱石者的 MET</strong>：provided sources 未提供休閒程度抱石者的實測 MET。現有實測為菁英選手在競賽情境下的峰值，不宜直接套用於一般愛好者。</li>
         <li><strong>肌力訓練的最佳劑量</strong>：provided sources 未提供以健康結果（而非肌力/肥大）為終點的最佳組數與反覆次數。指引本身亦未規定組數、次數或時長。</li>
@@ -1250,7 +1311,7 @@ svg.chart{width:100%;height:auto;display:block}
       <h2>個人參數</h2>
       <div class="grid2">
         <div class="field"><label for="sWeight">體重（kg）</label><input type="number" id="sWeight" min="0" step="0.1" inputmode="decimal"></div>
-        <div class="field"><label for="sAge">年齡</label><input type="number" id="sAge" min="0" step="1" inputmode="numeric"></div>
+        <div class="field"><label for="sAge">年齡<button type="button" class="helpbtn" data-help="h-older" aria-label="65 歲以上說明">?</button></label><input type="number" id="sAge" min="0" step="1" inputmode="numeric"><span class="faint" style="display:block;margin-top:4px">65 歲以上會多一項「多元運動」達標線</span></div>
         <div class="field"><label for="sRestHR">靜息心率（bpm）</label><input type="number" id="sRestHR" min="0" step="1" inputmode="numeric"></div>
         <div class="field"><label for="sWeekStart">週起始日</label>
           <select id="sWeekStart"><option value="1">週一</option><option value="0">週日</option></select>
@@ -1395,6 +1456,18 @@ const CONFIG = {
 
   /** 3.4 MET-minutes 參考帶（輔助指標，非達標判準） */
   metMinutesBand: { low: 500, high: 1000 },
+
+  /**
+   * 3.16 65 歲以上：多元運動（WHO 2020 長者建議）
+   * 原文：older adults should do varied multicomponent physical activity at moderate or greater
+   * intensity on 3 or more days a week in order to enhance functional capacity and prevent falls.
+   * 證據：平衡與功能性運動降低跌倒發生率（High certainty）；多元運動可能降低跌倒傷害（Moderate certainty）。
+   * 「同一天有平衡訓練 + 中強度以上活動才算一天」為 [實作約定]，WHO 未規定逐日判定方式。
+   */
+  olderAdults: {
+    ageMin: 65,
+    multicomponentDays: 3
+  },
 
   /** 3.5 肌力訓練（WHO 2020 成人建議第 3 條；Strong recommendation, Moderate certainty） */
   strength: {
@@ -1594,10 +1667,12 @@ const CONFIG = {
     { id: 'volleyball', name: '排球（休閒）',       met: 3.0,  group: '球類' },
 
     /* 舞蹈、格鬥與戶外 */
-    { id: 'aerodance', name: '有氧舞蹈／韻律課',   met: 7.3,  group: '舞蹈與格鬥' },
+    { id: 'aerodance', name: '有氧舞蹈／韻律課',   met: 7.3,  group: '舞蹈與格鬥', balanceDefault: true },
     { id: 'boxingbag', name: '拳擊（打沙袋）',     met: 5.5,  group: '舞蹈與格鬥' },
     { id: 'martial',   name: '武術／跆拳道（中等節奏）', met: 10.3, group: '舞蹈與格鬥' },
     { id: 'hiking',    name: '登山健行（越野）',   met: 6.0,  group: '舞蹈與格鬥' },
+    // Compendium 2024 代碼 15670「Tai chi, qi gong, general」= 3.3（舊版曾為 3.0／4.0，版本間有差異）
+    { id: 'taichi',    name: '太極拳／氣功（一般）', met: 3.3,  group: '舞蹈與格鬥', balanceDefault: true },
 
     /* 低強度與柔軟度（多屬 light，不計入 MEM，但仍計熱量） */
     { id: 'yogaHatha', name: '瑜伽（Hatha）',      met: 2.5, group: '低強度' },
@@ -2049,11 +2124,58 @@ function strengthStatus(records) {
            groupsOk: groupsOk, met: daysOk && groupsOk };
 }
 
-/** 3.6 綜合達標燈號 */
-function overallSignal(aerobicMet, strengthMet) {
-  if (aerobicMet && strengthMet) return { color: 'green', dot: '🟢', zh: '有氧與肌力皆達標' };
-  if (aerobicMet || strengthMet) return { color: 'yellow', dot: '🟡', zh: '僅其中一項達標' };
-  return { color: 'red', dot: '🔴', zh: '兩項皆未達標' };
+/**
+ * 3.6 綜合達標燈號
+ * 只傳兩個參數時為原本的有氧＋肌力雙軌；65 歲以上另傳 multiMet（多元運動），變成三軌。
+ * 三軌時綠燈必須三項皆達標——WHO 2020 把多元運動列為長者的獨立建議，不與有氧、肌力互相折抵。
+ */
+function overallSignal(aerobicMet, strengthMet, multiMet) {
+  if (multiMet === undefined) {
+    if (aerobicMet && strengthMet) return { color: 'green', dot: '🟢', zh: '有氧與肌力皆達標' };
+    if (aerobicMet || strengthMet) return { color: 'yellow', dot: '🟡', zh: '僅其中一項達標' };
+    return { color: 'red', dot: '🔴', zh: '兩項皆未達標' };
+  }
+  const n = (aerobicMet ? 1 : 0) + (strengthMet ? 1 : 0) + (multiMet ? 1 : 0);
+  if (n === 3) return { color: 'green', dot: '🟢', zh: '有氧、肌力、多元運動皆達標' };
+  if (n > 0) return { color: 'yellow', dot: '🟡', zh: '三項中 ' + n + ' 項達標' };
+  return { color: 'red', dot: '🔴', zh: '三項皆未達標' };
+}
+
+/** 是否適用 65 歲以上的長者建議 */
+function isOlderAdult(age) {
+  return Number(age) >= CONFIG.olderAdults.ageMin;
+}
+
+/**
+ * 3.16 多元運動天數（65 歲以上）[實作約定]
+ * 某一天要算數，須同時具備：
+ *   1. 至少一筆紀錄勾選「含平衡訓練」（balance: true）
+ *   2. 當天有中強度以上的活動——平衡紀錄本身達 moderate，或同日另有 moderate 以上的有氧／肌力
+ * 依據 WHO 2020：多元運動是把有氧、肌力、平衡結合在一次活動中，且須 moderate or greater intensity。
+ * 單做輕度平衡練習（如原地單腳站 2 MET）不算；同一天另外快走或重訓就算。
+ */
+function multicomponentStatus(records) {
+  const byDay = {};
+  records.forEach(function (r) {
+    const d = byDay[r.date] || (byDay[r.date] = { balance: false, moderate: false });
+    if (r.balance) d.balance = true;
+    let mod = false;
+    if (r.segments && r.segments.length) {
+      const t = segmentTotals(r.segments);
+      mod = (t.modMin + t.vigMin) > 0;
+    } else {
+      const c = classifyIntensity(r.met);
+      mod = c === 'moderate' || c === 'vigorous';
+    }
+    if (r.isStrength && r.strengthModerate) mod = true;
+    if (mod) d.moderate = true;
+  });
+  const days = Object.keys(byDay).filter(function (k) { return byDay[k].balance && byDay[k].moderate; });
+  // 有勾平衡、但當天沒有中強度活動的日子，另外列出來提醒使用者
+  const lightOnly = Object.keys(byDay).filter(function (k) { return byDay[k].balance && !byDay[k].moderate; });
+  const need = CONFIG.olderAdults.multicomponentDays;
+  return { days: days.length, dates: days.sort(), lightOnlyDays: lightOnly.length,
+           need: need, met: days.length >= need };
 }
 
 /** 日期工具（本地時間，避免時區位移） */
@@ -2132,7 +2254,7 @@ function hiitSegments(plan) {
 }
 
 /** 週彙總 */
-function summarizeWeek(records, weightKg) {
+function summarizeWeek(records, weightKg, age) {
   let modMin = 0, vigMin = 0, mem = 0, mm = 0, kcal = 0;
   records.forEach(function (r) {
     if (r.segments && r.segments.length) {
@@ -2151,10 +2273,13 @@ function summarizeWeek(records, weightKg) {
   });
   const aer = aerobicLevel(mem);
   const str = strengthStatus(records);
+  // 65 歲以上多一條「多元運動」；未滿 65 歲（或未傳年齡）時與原本完全相同
+  const multi = isOlderAdult(age) ? multicomponentStatus(records) : null;
   return {
     modMin: modMin, vigMin: vigMin, mem: mem, metMin: mm, kcal: kcal,
     aerobic: aer, vigorousOnly: vigorousOnlyLevel(vigMin), strength: str,
-    signal: overallSignal(aer.met, str.met)
+    multicomponent: multi,
+    signal: multi ? overallSignal(aer.met, str.met, multi.met) : overallSignal(aer.met, str.met)
   };
 }
 
@@ -2162,14 +2287,14 @@ function summarizeWeek(records, weightKg) {
  * 產生連續 N 週的達標序列（由最舊到最新）。
  * endWeekStartStr 為最後一週的週起始日；weeks 為週數。
  */
-function weeklySeries(records, weekStartDay, endWeekStartStr, weeks, weightKg) {
+function weeklySeries(records, weekStartDay, endWeekStartStr, weeks, weightKg, age) {
   const out = [];
   for (let i = weeks - 1; i >= 0; i--) {
     const ws = addDays(endWeekStartStr, -7 * i);
     const recs = records.filter(function (r) {
       return weekStartOf(r.date, weekStartDay) === ws;
     });
-    out.push({ ws: ws, count: recs.length, summary: summarizeWeek(recs, weightKg) });
+    out.push({ ws: ws, count: recs.length, summary: summarizeWeek(recs, weightKg, age) });
   }
   return out;
 }
@@ -2180,26 +2305,27 @@ function weeklySeries(records, weekStartDay, endWeekStartStr, weeks, weightKg) {
  * 否則週一打開 App 時連續數會被尚未完成的一週歸零。
  */
 function attainmentStats(series, inProgressWs) {
+  // 「全部達標」以綠燈為準：雙軌時等同有氧 && 肌力，65 歲以上三軌時自動納入多元運動
+  const allMet = function (w) { return w.summary.signal.color === 'green'; };
   let both = 0, aer = 0, str = 0;
   series.forEach(function (w) {
     const a = w.summary.aerobic.met, m = w.summary.strength.met;
     if (a) aer++;
     if (m) str++;
-    if (a && m) both++;
+    if (allMet(w)) both++;
   });
   // 目前連續：自最新的「已結束」週往回數
   let i = series.length - 1;
   if (inProgressWs && series[i] && series[i].ws === inProgressWs) i--;
   let current = 0;
   for (; i >= 0; i--) {
-    const w = series[i];
-    if (w.summary.aerobic.met && w.summary.strength.met) current++;
+    if (allMet(series[i])) current++;
     else break;
   }
   // 最長連續（含進行中週，因其若已達標即為事實）
   let longest = 0, run = 0;
   series.forEach(function (w) {
-    if (w.summary.aerobic.met && w.summary.strength.met) { run++; if (run > longest) longest = run; }
+    if (allMet(w)) { run++; if (run > longest) longest = run; }
     else run = 0;
   });
   return { weeks: series.length, both: both, aerobic: aer, strength: str,
@@ -2258,7 +2384,15 @@ function weeklyGap(summary, daysLeft) {
     tooLate: daysNeeded > 0 && daysNeeded > left,
     missing: s.missing.map(function (g) { return g.zh; })
   };
-  return { aerobic: aerobic, strength: strength, daysLeft: left, done: aerobic.met && strength.met };
+  let multi = null;
+  if (summary.multicomponent) {
+    const mc = summary.multicomponent;
+    const need = Math.max(0, mc.need - mc.days);
+    multi = { met: mc.met, days: mc.days, daysNeeded: need, tooLate: need > 0 && need > left,
+              lightOnlyDays: mc.lightOnlyDays };
+  }
+  return { aerobic: aerobic, strength: strength, multicomponent: multi, daysLeft: left,
+           done: aerobic.met && strength.met && (!multi || multi.met) };
 }
 
 /**
@@ -2381,6 +2515,44 @@ function runSelfTests() {
       actual: '天數=' + s.days + '（' + (s.daysOk ? '達標' : '未達標') + '）、缺漏肌群=' + (missingZh || '無') + ' → 肌力' + (s.met ? '達標' : '未達標'),
       pass: s.days === 2 && s.daysOk === true && s.groupsOk === false && s.met === false &&
             s.missing.length === 1 && s.missing[0].id === 'abdomen' });
+  })();
+
+  // TC-24：65 歲以上多元運動（WHO 2020：平衡＋肌力為主的多元運動，中強度以上，每週 ≥3 天）
+  (function () {
+    const walk = function (d) { return { date: d, met: 5.0, minutes: 30 }; };
+    const bal = function (d, met) { return { date: d, met: met, minutes: 15, balance: true }; };
+    const lift = function (d, m) { return { date: d, met: 3.5, minutes: 30, isStrength: true, strengthModerate: true, muscles: m }; };
+    // 單腳站等輕度平衡（2.0 MET）單獨做 → 不算；同日另有快走 → 算；太極 3.3 本身即中強度 → 算；
+    // 平衡與快走在不同天 → 都不算
+    const r1 = multicomponentStatus([bal('2026-10-19', 2.0)]);
+    const r2 = multicomponentStatus([bal('2026-10-19', 2.0), walk('2026-10-19')]);
+    const r3 = multicomponentStatus([bal('2026-10-20', 3.3)]);
+    const r4 = multicomponentStatus([bal('2026-10-19', 2.0), walk('2026-10-20')]);
+    // 完整的一週：有氧 150、肌力 2 天 7 肌群，但多元運動只有 2 天
+    const week = [walk('2026-10-19'), walk('2026-10-20'), walk('2026-10-21'), walk('2026-10-22'), walk('2026-10-23'),
+                  lift('2026-10-19', ['legs', 'hips', 'back', 'abdomen']), lift('2026-10-22', ['chest', 'shoulders', 'arms']),
+                  bal('2026-10-19', 2.0), bal('2026-10-21', 2.0)];
+    const young = summarizeWeek(week, 70, 40);
+    const old2 = summarizeWeek(week, 70, 70);
+    const old3 = summarizeWeek(week.concat([bal('2026-10-23', 2.0)]), 70, 70);
+    const gap = weeklyGap(old2, 3);
+    // 長者三軌下的連續達標：多元運動未達的週不得算進連續
+    const series = [{ ws: 'a', summary: old3 }, { ws: 'b', summary: old2 }, { ws: 'c', summary: old3 }];
+    const st = attainmentStats(series, null);
+    T.push({ id: 'TC-24', name: '65 歲以上多元運動（平衡＋中強度同日、三軌燈號）',
+      expected: '輕度平衡單獨 0 天；同日加快走 1 天；太極 3.3 單獨 1 天；平衡與快走不同天 0 天｜' +
+                '同一週：40 歲 → 綠燈且無多元運動欄；70 歲多元 2 天 → 黃燈「三項中 2 項」；補第 3 天 → 綠燈｜' +
+                '70 歲還差 1 天、剩 3 天來得及｜三週序列中間週未達 → 全部達標 2 週、最長連續 1',
+      actual: '單獨 ' + r1.days + '、同日 ' + r2.days + '、太極 ' + r3.days + '、不同天 ' + r4.days +
+              '｜40 歲 ' + young.signal.color + '（多元 ' + (young.multicomponent === null ? '無' : '有') + '）；70 歲 ' +
+              old2.multicomponent.days + ' 天 ' + old2.signal.color + '「' + old2.signal.zh + '」；補第 3 天 ' + old3.signal.color +
+              '｜還差 ' + gap.multicomponent.daysNeeded + ' 天、' + (gap.multicomponent.tooLate ? '來不及' : '來得及') +
+              '｜全部達標 ' + st.both + ' 週、最長連續 ' + st.longestStreak,
+      pass: r1.days === 0 && r1.lightOnlyDays === 1 && r2.days === 1 && r3.days === 1 && r4.days === 0 &&
+            young.signal.color === 'green' && young.multicomponent === null &&
+            old2.multicomponent.days === 2 && old2.signal.color === 'yellow' && old2.signal.zh === '三項中 2 項達標' &&
+            old3.signal.color === 'green' && gap.multicomponent.daysNeeded === 1 && !gap.multicomponent.tooLate &&
+            !gap.done && st.both === 2 && st.longestStreak === 1 });
   })();
 
   // TC-23：本週還差多少（沿用 MEM 定義換算，不得引入新的換算係數）
@@ -2864,7 +3036,7 @@ function runSelfTests() {
   function renderDash() {
     if (!viewWeekStart) viewWeekStart = weekStartOf(fmtDate(new Date()), settings.weekStart);
     const recs = recordsOfWeek(viewWeekStart);
-    const s = summarizeWeek(recs, settings.weightKg);
+    const s = summarizeWeek(recs, settings.weightKg, settings.age);
     const end = addDays(viewWeekStart, 6);
     const isThis = viewWeekStart === weekStartOf(fmtDate(new Date()), settings.weekStart);
     // 結束日省略年份，避免窄螢幕折行
@@ -2873,7 +3045,21 @@ function runSelfTests() {
     // 綜合燈號
     $('sigDot').textContent = s.signal.dot;
     $('sigText').textContent = s.signal.zh;
-    $('sigDetail').textContent = '有氧' + (s.aerobic.met ? '達標' : '未達標') + ' · 肌力' + (s.strength.met ? '達標' : '未達標');
+    $('sigDetail').textContent = '有氧' + (s.aerobic.met ? '達標' : '未達標') + ' · 肌力' + (s.strength.met ? '達標' : '未達標') +
+      (s.multicomponent ? ' · 多元運動' + (s.multicomponent.met ? '達標' : '未達標') : '');
+
+    // 多元運動（65 歲以上）
+    const mc = s.multicomponent;
+    $('multiCard').classList.toggle('hidden', !mc);
+    if (mc) {
+      $('multiDays').textContent = mc.days;
+      $('multiFill').style.width = pct(mc.days, mc.need) + '%';
+      const ms = $('multiStatus');
+      ms.textContent = mc.met ? '達標' : '未達標';
+      ms.className = 'status lv' + (mc.met ? 1 : 0);
+      $('multiNote').textContent = (mc.days ? '已算數的日子：' + mc.dates.map(function (d) { return d.slice(5).replace('-', '/'); }).join('、') + '。' : '') +
+        (mc.lightOnlyDays ? '另有 ' + mc.lightOnlyDays + ' 天有平衡訓練、但當天沒有中強度以上的活動，所以未計入；同一天加一段快走或重訓即可算數。' : '');
+    }
 
     // 有氧
     $('memVal').textContent = round(s.mem, 1);
@@ -2962,6 +3148,20 @@ function runSelfTests() {
       rows.push(li('', '○', '肌力還差 <strong>' + S.daysNeeded + ' 天</strong>（須在不同日期），本週含今天還剩 ' +
         g.daysLeft + ' 天。' + missing));
     }
+    const M = g.multicomponent;
+    if (M) {
+      if (M.met) {
+        rows.push(li('ok', '✓', '多元運動已達標（' + M.days + ' 天）。'));
+      } else if (past) {
+        rows.push(li('warn', '✕', '該週多元運動 ' + M.days + ' 天，還差 <strong>' + M.daysNeeded + ' 天</strong>。'));
+      } else if (M.tooLate) {
+        rows.push(li('warn', '✕', '多元運動還差 <strong>' + M.daysNeeded + ' 天</strong>，但本週只剩 ' + g.daysLeft +
+          ' 天，<strong>已來不及湊滿</strong>。下週記得提早安排。'));
+      } else {
+        rows.push(li('', '○', '多元運動還差 <strong>' + M.daysNeeded + ' 天</strong>：同一天做平衡訓練（如太極、單腳站），' +
+          '加上中強度以上的活動（如快走、重訓）。本週含今天還剩 ' + g.daysLeft + ' 天。'));
+      }
+    }
     $('gapList').innerHTML = rows.join('');
   }
 
@@ -2981,9 +3181,10 @@ function runSelfTests() {
           const g = CONFIG.strength.muscleGroups.filter(function (x) { return x.id === id; })[0];
           return g ? g.zh : id;
         }).join('/') + (r.strengthModerate ? '' : '（強度未達 moderate，不計）') : '';
+    const balTag = r.balance ? '<span class="tag">含平衡</span>' : '';
     return '<div class="rec" data-id="' + esc(r.id) + '">' +
       '<div class="l"><b>' + esc(r.name) + '</b>' +
-      '<span>' + esc(r.date) + ' · ' + round(r.minutes, 0) + ' 分 · MET ' + round(r.met, 2) + ' · ' + badge + ' ' + src + esc(mus) +
+      '<span>' + esc(r.date) + ' · ' + round(r.minutes, 0) + ' 分 · MET ' + round(r.met, 2) + ' · ' + badge + ' ' + src + balTag + esc(mus) +
       (r.note ? ' · ' + esc(r.note) : '') + '</span></div>' +
       '<div class="r"><div class="v">MEM ' + round(seg ? seg.mem : memContribution(r.met, r.minutes), 1) + '</div>' +
       '<div class="v faint">' + round(seg ? seg.metMin : metMinutes(r.met, r.minutes), 0) + ' MET-min</div>' +
@@ -4134,6 +4335,7 @@ function runSelfTests() {
     $('modHiit').classList.toggle('hidden', kind !== 'hiit');
     $('modOverride').classList.toggle('hidden', !$('fOverride').checked);
     $('modStrength').classList.toggle('hidden', !$('fIsStrength').checked);
+    $('modBalance').classList.toggle('hidden', !isOlderAdult(settings.age));
   }
 
   /** 依目前表單計算 MET 與來源 */
@@ -4244,6 +4446,7 @@ function runSelfTests() {
   $('fActivity').addEventListener('change', function () {
     const a = currentActivity();
     if (a && a.strengthDefault) { $('fIsStrength').checked = true; }
+    if (a && a.balanceDefault) { $('fBalance').checked = true; }
     updatePreview();
   });
   $('fSpeed').addEventListener('input', function () {
@@ -4317,6 +4520,7 @@ function runSelfTests() {
     $('fOverride').checked = false;
     $('fIsStrength').checked = false;
     $('fStrengthModerate').checked = true;
+    $('fBalance').checked = false;
     delete $('fOvMet').dataset.touched;
     selectedMuscles = {}; swimPct = {};
     buildMuscleChips(); buildSwimRows();
@@ -4336,6 +4540,7 @@ function runSelfTests() {
     $('fNote').value = r.note || '';
     $('fIsStrength').checked = !!r.isStrength;
     $('fStrengthModerate').checked = r.strengthModerate !== false;
+    $('fBalance').checked = !!r.balance;
     selectedMuscles = {}; (r.muscles || []).forEach(function (m) { selectedMuscles[m] = true; });
     swimPct = {}; if (r.meta && r.meta.swimPct) Object.assign(swimPct, r.meta.swimPct);
     if (r.meta && r.meta.speedKmh) { $('fSpeed').value = r.meta.speedKmh; $('fPace').value = round(speedKmhToPace(r.meta.speedKmh), 2); }
@@ -4375,6 +4580,8 @@ function runSelfTests() {
       isStrength: isStrength,
       strengthModerate: $('fStrengthModerate').checked,
       muscles: muscles,
+      // 只在長者模式下記錄；未滿 65 歲時欄位隱藏，存 false 以免留下看不見的勾選
+      balance: isOlderAdult(settings.age) && $('fBalance').checked,
       note: $('fNote').value.trim(),
       meta: {}
     };
@@ -4428,13 +4635,15 @@ function runSelfTests() {
   /** 達標軌跡：連續 12 週的有氧／肌力／綜合狀態 */
   function renderTrack() {
     const thisWeek = weekStartOf(fmtDate(new Date()), settings.weekStart);
-    const series = weeklySeries(records, settings.weekStart, thisWeek, 12, settings.weightKg);
+    const series = weeklySeries(records, settings.weekStart, thisWeek, 12, settings.weightKg, settings.age);
     const st = attainmentStats(series, thisWeek);
+    // 65 歲以上為三軌（有氧、肌力、多元運動），「達標」須三項全過
+    const allLbl = isOlderAdult(settings.age) ? '三項皆達標' : '雙軌達標';
 
     $('streakStats').innerHTML =
-      '<div><span>目前連續</span><b>' + st.currentStreak + '<small> 週</small></b><em>雙軌達標</em></div>' +
-      '<div><span>近 12 週</span><b>' + st.both + '<small> / 12</small></b><em>雙軌達標</em></div>' +
-      '<div><span>最長連續</span><b>' + st.longestStreak + '<small> 週</small></b><em>雙軌達標</em></div>';
+      '<div><span>目前連續</span><b>' + st.currentStreak + '<small> 週</small></b><em>' + allLbl + '</em></div>' +
+      '<div><span>近 12 週</span><b>' + st.both + '<small> / 12</small></b><em>' + allLbl + '</em></div>' +
+      '<div><span>最長連續</span><b>' + st.longestStreak + '<small> 週</small></b><em>' + allLbl + '</em></div>';
 
     const lastIdx = series.length - 1;
     $('wtrackCols').innerHTML = series.map(function (w, idx) {
@@ -4447,6 +4656,7 @@ function runSelfTests() {
       const title = weekRangeLabel(w.ws) + '｜' +
         (none ? '無紀錄' : 'MEM ' + round(w.summary.mem, 0) + '、肌力 ' + w.summary.strength.days + ' 天') +
         '｜有氧' + (a ? '達標' : '未達標') + '、肌力' + (m ? '達標' : '未達標') +
+        (w.summary.multicomponent ? '、多元運動' + (w.summary.multicomponent.met ? '達標' : '未達標') : '') +
         (isNow ? '（本週進行中）' : '');
       return '<button class="wcol' + (isNow ? ' now' : '') + '" data-ws="' + w.ws + '" title="' + esc(title) + '">' +
         '<i class="c' + (a ? ' met' : (none ? ' empty' : '')) + '"></i>' +
@@ -4468,7 +4678,7 @@ function runSelfTests() {
     const weeks = weeksOf(records);
     const thisWeek = weekStartOf(fmtDate(new Date()), settings.weekStart);
     $('histList').innerHTML = weeks.length ? weeks.map(function (w) {
-      const s = summarizeWeek(w.recs, settings.weightKg);
+      const s = summarizeWeek(w.recs, settings.weightKg, settings.age);
       const pill = function (label, ok) {
         return '<span class="tag' + (ok ? ' on' : '') + '">' + label + (ok ? ' 達標' : ' 未達標') + '</span>';
       };
@@ -4476,6 +4686,7 @@ function runSelfTests() {
         '<div class="wh-top">' + s.signal.dot + ' <b>' + weekRangeLabel(w.ws) + '</b>' +
         (w.ws === thisWeek ? '<span class="tag on">本週</span>' : '') + '</div>' +
         '<div class="wh-pills">' + pill('有氧', s.aerobic.met) + pill('肌力', s.strength.met) +
+        (s.multicomponent ? pill('多元', s.multicomponent.met) : '') +
         '<span class="wh-num">MEM ' + round(s.mem, 0) + ' · ' + round(s.metMin, 0) + ' MET-min · 肌力 ' + s.strength.days + ' 天</span>' +
         '</div></div>' +
         w.recs.slice().sort(function (a, b) { return a.date < b.date ? -1 : 1; }).map(recRow).join('');
@@ -4531,6 +4742,7 @@ function runSelfTests() {
       settings[key] = cast($(id).value);
       saveSettings();
       if (key === 'weekStart') { viewWeekStart = weekStartOf(fmtDate(new Date()), settings.weekStart); }
+      if (key === 'age') syncModules();        // 跨過 65 歲時，表單的平衡訓練欄位要跟著出現或隱藏
       renderHR(); renderDash(); renderHistory();
     });
   }
@@ -4720,7 +4932,8 @@ function runSelfTests() {
   });
   $('btnExportCsv').addEventListener('click', function () {
     const head = ['id', 'date', 'weekStart', 'activity', 'met', 'metSource', 'minutes', 'intensity',
-                  'vigorousMin', 'moderateMin', 'mem', 'metMin', 'kcal', 'isStrength', 'strengthModerate', 'muscles', 'note'];
+                  'vigorousMin', 'moderateMin', 'mem', 'metMin', 'kcal', 'isStrength', 'strengthModerate', 'muscles', 'note',
+                  'balance'];
     const q = function (v) { return '"' + String(v === null || v === undefined ? '' : v).replace(/"/g, '""') + '"'; };
     const rows = records.slice().sort(function (a, b) { return a.date < b.date ? -1 : 1; }).map(function (r) {
       const sg = (r.segments && r.segments.length) ? segmentTotals(r.segments) : null;
@@ -4731,7 +4944,7 @@ function runSelfTests() {
         round(sg ? sg.mem : memContribution(r.met, r.minutes), 2),
         round(sg ? sg.metMin : metMinutes(r.met, r.minutes), 2),
         round(kcalOf(r.met, settings.weightKg, r.minutes), 1), r.isStrength ? 1 : 0, r.strengthModerate ? 1 : 0,
-        (r.muscles || []).join('|'), r.note || ''].map(q).join(',');
+        (r.muscles || []).join('|'), r.note || '', r.balance ? 1 : 0].map(q).join(',');
     });
     download('exercise-records-' + fmtDate(new Date()) + '.csv', '﻿' + head.map(q).join(',') + '\n' + rows.join('\n'), 'text/csv');
   });
