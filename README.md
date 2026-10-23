@@ -52,12 +52,31 @@ npx http-server . -p 8080
 ```
 
 - 環境需求：現代瀏覽器（iOS Safari / Android Chrome / 桌機瀏覽器）
-- 資料儲存於該瀏覽器的 `localStorage`，不上傳、不同步；清除瀏覽器資料會一併移除，建議定期由「設定 → 匯出 JSON」備份
+- 資料儲存於該瀏覽器的 `localStorage`，不上傳、不同步；清除瀏覽器資料會一併移除，建議定期由「設定 → 匯出 JSON」備份（超過 14 天未匯出時儀表板會提醒）
+- **可安裝為 App（PWA）**：iPhone 在 Safari 點「分享 → 加入主畫面」；Android Chrome 可在設定頁按「安裝到主畫面」。安裝後可離線開啟，詳見下方「資料保護」
 - 深色模式依系統偏好（`prefers-color-scheme`）自動切換
 - 提供四級顯示字級（設定頁最上方），字體與觸控目標一併放大，適合長輩或視力較弱者使用
 - 技術實作：vanilla JS，主體為單一 `index.html`（HTML + CSS + JS 全內嵌），趨勢圖以純 SVG 繪製
+- **PWA 附屬檔案**：`manifest.webmanifest`、`sw.js`、`icons/`。缺少它們時網站照常運作，只是無法安裝與離線開啟；以本機檔案（`file://`）開啟或嵌在 iframe 中時不會註冊 Service Worker
 - **例外**：跑步機數字辨識（OCR）需要 `vendor/ocr/` 內的資源（約 13 MB，Tesseract 開源引擎，自行託管、不呼叫外部 API）。這是全專案唯一的外部相依，且**僅在使用者主動按下辨識時才載入**；`index.html` 單獨存在時所有其他功能完全正常，辨識則會顯示提示並可改為手動輸入
 
+
+### 資料保護（PWA、備份提醒、持久保存）
+
+紀錄沒有雲端副本，這是「不需要帳號、資料不離開裝置」這個設計的代價。為了降低遺失機會，做了三件事，**都不改變任何計算**：
+
+| 防護 | 做法 | 實作 |
+|---|---|---|
+| 定期匯出 | 有紀錄但從未匯出、或距上次匯出 ≥ 14 天時，儀表板提醒並提供「立即匯出」；可選 3 天後再提醒 | `backupNudge()`（CORE，TC-22）、`CONFIG.backup` |
+| 加入主畫面 | iPhone 在 Safari 中開啟且已有紀錄時，建議加入主畫面；Android／桌機 Chrome 攔下 `beforeinstallprompt`，改由設定頁按鈕安裝 | `manifest.webmanifest`、`icons/` |
+| 離線開啟 | Service Worker：頁面一律**先連網路**（每次部署立即生效），失敗才用快取；其他同源資源先給快取、背景更新；不碰跨網域請求 | `sw.js`，快取名稱 `wex-shell-v1` |
+| 持久保存 | 設定頁顯示 `navigator.storage.persisted()` 的結果；未核准時可按鈕呼叫 `persist()`。**只查詢、不在開啟時主動要求**，因為 Firefox 會跳出權限詢問 | 設定 → 資料保護狀態 |
+
+儀表板**一次只顯示一則提醒**：iPhone 尚未加入主畫面時先顯示「加入主畫面」（它防的是資料被自動刪除，比備份更前面一步），關閉後才輪到備份提醒。
+
+**為什麼 iPhone 需要特別處理** `[時效性]`：依 Apple 2020 年公布的政策，Safari 會在使用者使用 Safari 滿 7 天、期間都沒有和某網站互動時，刪除該網站以程式寫入的儲存資料；同一說明表示加入主畫面的網頁 App 不受此限。但 WebKit 2022 年的一則說明對豁免範圍描述較窄（明確保證不刪的是 HTML 儲存）。查得的資料最新只到 2022 年，需再查證；**最可靠的防護仍是定期匯出**。
+
+驗證（Chromium 端對端）：manifest 與三種圖示皆可取得；Service Worker 接管後**斷網重新整理仍可開啟**；新增紀錄後出現提醒、從提醒直接匯出後提醒消失；稍後提醒生效；匯入備份檔以其 `exportedAt` 為最近備份時間；清除所有資料一併重設；以 iPhone 13 裝置模擬時顯示加入主畫面建議、同時不顯示備份提醒、按「不再顯示」後重新整理仍隱藏。無 console error。
 ---
 
 ## 2. 功能說明
@@ -469,6 +488,7 @@ const targetHR  = hrRest + intensityPercent * (hrMax - hrRest);   // Karvonen
 | `hiit` | HIIT 預設課表（熱身／組數／秒數／各段 MET） | 需調整預設課表時 |
 | `fontSizes` | 顯示字級選項（id / 中文名稱 / 倍率） | 需要更大字級或調整級距時 |
 | `photo` | `maxDimPx` / `jpegQuality`（跑步機照片縮圖參數） | 需調整儲存空間與畫質的取捨時 |
+| `backup` | `remindDays`（14）／`snoozeDays`（3）／`minRecords`（1）（備份提醒） | 想更頻繁或更少提醒時 |
 | `ocr` | `basePath` / `percentiles` / `psmModes` / `upscale` / `detect`（`percentiles` 候選門檻、`maxRows` 保留列數、`maxRegions` 逐值區域上限）/ `adaptive` / `speedBandKmh` / `confidence`（`minVotes` 2、`minAgreement` 0.25）/ `mileToKm` | 辨識率不佳時可增減百分位組合；`maxRegions` 調小可加快、調大可提高讀到率 |
 | `hr` | Tanaka 係數、水中修正預設值與可調範圍 | 新證據出現時 |
 | `subjective` | talk test / RPE 對應之預設 MET 與區間 | 校正建議更新 |
@@ -490,6 +510,7 @@ const targetHR  = hrRest + intensityPercent * (hrMax - hrRest);   // Karvonen
 | `wex.records.v1` | 運動紀錄陣列 |
 | `wex.settings.v1` | 個人設定 |
 | `wex.custom.v1` | 自訂活動項目 |
+| `wex.backup.v1` | 資料保護狀態：`lastExportAt`（上次匯出時間）、`snoozeUntil`（稍後提醒的期限）、`installHintDismissed`（不再顯示加入主畫面建議）。**不包含在匯出檔中**；匯入備份檔時以該檔的 `exportedAt` 作為最近一次備份時間 |
 
 ### 紀錄物件（record）
 
@@ -571,7 +592,7 @@ mem, metMin, kcal, isStrength, strengthModerate, muscles, note
 - **App 內**：開啟 `index.html` → 設定 → 「執行自我測試」，結果以表格呈現
 - **Node**：抽出 `CORE` 區塊後呼叫 `runSelfTests()`（無需任何相依套件）
 
-**執行結果：21 / 21 通過**（於 Node 22 與 Chromium 兩種環境執行，結果一致）
+**執行結果：22 / 22 通過**（於 Node 22 與 Chromium 兩種環境執行，結果一致）
 
 | 案例 | 說明 | 期望值 | 實際執行結果 | 判定 |
 |---|---|---|---|---|
@@ -584,6 +605,7 @@ mem, metMin, kcal, isStrength, strengthModerate, muscles, note
 | **TC-7** | MEM 閾值邊界 | 149 → 未達標；150 → 基本達標；300 → 基本達標；301 → 額外效益 | **未達標 / 基本達標 / 基本達標 / 額外效益** | ✅ PASS |
 | **TC-8** | 肌群覆蓋（週一腿髖背、週四胸肩臂） | 天數達標（2 天）但腹部未覆蓋 → 肌力未達標，UI 標示缺漏肌群 | 天數 = **2**（達標）、缺漏肌群 = **腹部** → 肌力**未達標**；儀表板 7 格覆蓋圖中腹部呈灰階，並顯示「缺漏肌群：腹部（訓練天數已達標）」 | ✅ PASS |
 | **TC-9** | 短時長活動（快走 6.4 km/hr，MET 5.0，7 分鐘） | 正常計入，MEM 貢獻 = 7（不得因 <10 分鐘而排除） | MEM 貢獻 = **7**（moderate，MET-min = 35） | ✅ PASS |
+| **TC-22** | 備份提醒時機 | 0 筆不提醒；有紀錄但從未匯出要提醒；3 天前不提醒；滿 14 天要提醒；暫停期間不提醒、暫停過期恢復提醒 | 0 筆 **noRecords**；從未 **提醒**；3 天前 **不提醒**（3 天）；14 天 **提醒**（14 天）；暫停中 **不提醒**；暫停過期 **提醒** | ✅ PASS |
 | **TC-21** | 讀數證據強度（票數 + 實際辨識次數） | 6/10、3/10 通過；2/10 不通過（比例 0.2 < 0.25）；1/10 不通過（票數 < 2）；`pickOcrCandidate` 回傳 votes=2、total=2、attempts=10 | 6/10 **通過**；3/10 **通過**；2/10 **不通過（lowAgreement）**；1/10 **不通過（fewVotes）**；pick votes=**2**、total=**2**、attempts=**10** | ✅ PASS |
 | **TC-20** | 直式清單版面與速度合理帶（Garmin 主機實測） | `22:19 6:23` → 由配速反推距離 3.5 km；`3.51KM 22:19 6:23` → 3.51 km、9.44 km/hr；`22:19 2:19`（25.9 km/hr）→ null | 反推 **3.5 km**；完整 **3.51 km、9.44 km/hr**；超速組合 **null（已擋下）** | ✅ PASS |
 | **TC-19** | 合併字串擷取與配速交叉驗證（Nike Run Club 版面實測） | `2.46KM00:15:3006:18M` → 距離 2.46、時長 00:15:30、9.52 km/hr；英里制 1.53mi→2.46km；僅配速+距離可反推時長；純雜訊 → null | 擷取 **distance, duration, timeOrPace**；判定 距離 **2.46**、時長 **00:15:30**、**9.52 km/hr**；英里制 **2.46 km**；反推**成功**；雜訊 **null** | ✅ PASS |

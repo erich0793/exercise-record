@@ -5,6 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
 <title>每週運動達標換算</title>
+<!-- 可安裝為 App（PWA）：加到主畫面後可離線開啟，且 iOS 對主畫面 App 的資料保存較寬鬆 -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#2f6f5e">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="運動達標">
 <style>
 /* ========== 設計代幣（單一強調色 + 低彩度中性配色） ========== */
 /* 字級縮放：--fs 為全域倍率，所有字體與觸控目標依此放大 */
@@ -154,6 +162,11 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-
 .field{margin-bottom:12px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+/* 資料保護狀態：標籤／值兩欄，窄螢幕自動換行 */
+.protect{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;margin:0;font-size:calc(14px * var(--fs))}
+.protect dt{color:var(--text-muted);white-space:nowrap}
+.protect dd{margin:0;overflow-wrap:anywhere}
+@media(max-width:360px){.protect{grid-template-columns:1fr}.protect dd{margin-bottom:6px}}
 /* 分、秒各自獨立：手機的數字鍵盤沒有「:」可打，拆成兩格才輸入得了 */
 .timeinput{display:flex;align-items:center;gap:6px}
 .timeinput input{flex:1 1 0;min-width:0}
@@ -343,6 +356,9 @@ svg.chart{width:100%;height:auto;display:block}
 
   <!-- ① 本週儀表板 -->
   <section class="tabpanel active" id="tab-dash" role="tabpanel">
+    <!-- 資料保護提醒：紀錄只存在本機，沒有雲端副本 -->
+    <div class="callout hidden" id="backupNudge" style="margin-top:0"></div>
+    <div class="callout hidden" id="installHint" style="margin-top:0"></div>
     <div class="card">
       <h2>本週區間</h2>
       <div class="row">
@@ -730,6 +746,7 @@ svg.chart{width:100%;height:auto;display:block}
         <a href="#h-freq">一週兩次就夠嗎</a>
         <a href="#h-grade">證據分級宣告</a>
         <a href="#h-gap">證據缺口</a>
+        <a href="#h-data">資料保存與備份</a>
       </div>
     </div>
 
@@ -1165,6 +1182,25 @@ svg.chart{width:100%;height:auto;display:block}
     </div>
 
     <div class="card">
+      <h2 id="h-data">資料保存與備份</h2>
+      <p>你的紀錄<strong>只存在這個瀏覽器裡</strong>，不會上傳，也<strong>沒有雲端副本</strong>。這是刻意的設計：不需要帳號、資料不離開你的裝置。代價是保存責任在你身上，下列情況紀錄就會消失：</p>
+      <ul>
+        <li>換手機或換瀏覽器</li>
+        <li>清除瀏覽器的網站資料</li>
+        <li>瀏覽器自動清理儲存空間（見下方 iPhone 說明）</li>
+      </ul>
+      <h4>三道防護</h4>
+      <ul>
+        <li><strong>定期匯出備份</strong>：設定 → 資料管理 →「匯出 JSON」。超過 14 天沒匯出，儀表板會提醒你。換手機時用「匯入 JSON」還原。</li>
+        <li><strong>加入主畫面</strong>：iPhone 在 Safari 點「分享」→「加入主畫面」；Android 的 Chrome 可在設定頁按「安裝到主畫面」。加入後可以像 App 一樣開啟，<strong>沒有網路也能使用</strong>。</li>
+        <li><strong>持久保存</strong>：設定頁會顯示瀏覽器是否已同意「儲存空間不足時不自動清除」。尚未同意時可按按鈕要求，但最後由瀏覽器決定。</li>
+      </ul>
+      <h4>iPhone 的 Safari 為什麼特別需要注意</h4>
+      <p>依 Apple 在 2020 年公布的政策，Safari 會在你<strong>使用 Safari 滿 7 天、期間都沒有開啟某個網站</strong>時，刪除該網站以程式寫入的儲存資料，本工具的紀錄就屬於這一類。同一份說明表示，<strong>加入主畫面的網頁 App 不受此限</strong>。</p>
+      <p class="src"><code>[時效性]</code> 我們找到的相關說明最新只到 2022 年，且 WebKit 2022 年的一則說明對豁免範圍的描述比 2020 年窄（明確保證不刪的是 HTML 儲存）。瀏覽器政策可能改變，<strong>最可靠的防護仍是定期匯出備份</strong>。</p>
+    </div>
+
+    <div class="card">
       <h2 id="h-gap">證據缺口與限制</h2>
       <ul>
         <li><strong>抱石的官方肌群對應</strong>：WHO 2020 與 US PAG 2018 均未提供攀岩對應哪些主要肌群的官方分類。本工具的建議勾選組合為<code>[實作約定]</code>，依據肌力適應與 EMG 研究推得，非指引結論。</li>
@@ -1257,6 +1293,12 @@ svg.chart{width:100%;height:auto;display:block}
       </div>
       <input type="file" id="fileImport" accept="application/json,.json" class="hidden">
       <p class="faint" style="margin:10px 0 0">資料儲存在此瀏覽器的 localStorage，不會上傳；清除瀏覽器資料將一併移除。建議定期匯出備份。</p>
+      <h3 style="margin:16px 0 6px">資料保護狀態</h3>
+      <dl class="protect" id="protectInfo"></dl>
+      <div class="btnrow" style="margin-top:8px">
+        <button class="btn secondary small hidden" id="btnPersist">要求瀏覽器持久保存</button>
+        <button class="btn secondary small hidden" id="btnInstall">安裝到主畫面</button>
+      </div>
       <div class="callout hidden" id="storageWarn" style="border-left-color:var(--red);margin-bottom:0">
         <strong>此環境無法寫入 localStorage</strong>，紀錄僅暫存於本次瀏覽階段，關閉或重新整理分頁後將遺失。
         若要長期記錄，請將 <code>index.html</code> 下載至手機或電腦後直接開啟（可加入主畫面），或在離開前先「匯出 JSON」備份。
@@ -1437,6 +1479,18 @@ const CONFIG = {
   photo: {
     maxDimPx: 1200,
     jpegQuality: 0.72
+  },
+
+  /**
+   * 備份提醒 [實作約定]
+   * 紀錄只存在本機瀏覽器，沒有雲端副本。iPhone 的 Safari 依 Apple 2020 年公布的政策，
+   * 會在「使用 Safari 滿 7 天、期間都沒有和網站互動」後刪除網站以程式寫入的儲存資料；
+   * 加到主畫面的網頁 App 被說明為不受此限。這兩道防護（主畫面 + 定期匯出）都是為此而設。
+   */
+  backup: {
+    remindDays: 14,     // 距上次匯出超過此天數就提醒
+    snoozeDays: 3,      // 按「稍後提醒」後暫停的天數
+    minRecords: 1       // 至少有幾筆紀錄才值得提醒
   },
 
   /** 4.1 ACSM 跑步方程式之適用範圍 [公式推導] */
@@ -2159,6 +2213,25 @@ function rpeToIntensity(scale, value) {
   return 'light';
 }
 
+/**
+ * 是否該提醒使用者匯出備份。
+ * 日期一律以 ISO 字串傳入（含時區無妨），nowIso 由呼叫端提供，便於測試。
+ * 回傳 { show, days, reason }：days 為距上次匯出的整天數，從未匯出則為 null。
+ */
+function backupNudge(recordCount, lastBackupIso, snoozeUntilIso, nowIso) {
+  const c = CONFIG.backup;
+  const now = new Date(nowIso).getTime();
+  const DAY = 86400000;
+  if (!(recordCount >= c.minRecords)) return { show: false, days: null, reason: 'noRecords' };
+  const last = lastBackupIso ? new Date(lastBackupIso).getTime() : NaN;
+  const days = isNaN(last) ? null : Math.floor((now - last) / DAY);
+  const snooze = snoozeUntilIso ? new Date(snoozeUntilIso).getTime() : NaN;
+  if (!isNaN(snooze) && now < snooze) return { show: false, days: days, reason: 'snoozed' };
+  if (days === null) return { show: true, days: null, reason: 'never' };
+  if (days >= c.remindDays) return { show: true, days: days, reason: 'stale' };
+  return { show: false, days: days, reason: 'recent' };
+}
+
 /* ---------------------- 第 11 節 驗收測試案例 ---------------------- */
 function runSelfTests() {
   const T = [];
@@ -2260,6 +2333,27 @@ function runSelfTests() {
       actual: '天數=' + s.days + '（' + (s.daysOk ? '達標' : '未達標') + '）、缺漏肌群=' + (missingZh || '無') + ' → 肌力' + (s.met ? '達標' : '未達標'),
       pass: s.days === 2 && s.daysOk === true && s.groupsOk === false && s.met === false &&
             s.missing.length === 1 && s.missing[0].id === 'abdomen' });
+  })();
+
+  // TC-22：備份提醒時機（紀錄只存在本機，沒有雲端副本）
+  (function () {
+    const now = '2026-10-23T12:00:00Z';
+    const c = CONFIG.backup;
+    const empty = backupNudge(0, null, null, now);                                   // 沒紀錄 → 不吵
+    const never = backupNudge(5, null, null, now);                                   // 有紀錄、從未匯出
+    const fresh = backupNudge(5, '2026-10-20T12:00:00Z', null, now);                 // 3 天前
+    const edge = backupNudge(5, '2026-10-09T12:00:00Z', null, now);                  // 剛好 14 天
+    const snoozed = backupNudge(5, null, '2026-10-24T00:00:00Z', now);               // 稍後提醒中
+    const expired = backupNudge(5, null, '2026-10-22T00:00:00Z', now);               // 暫停已過
+    T.push({ id: 'TC-22', name: '備份提醒時機',
+      expected: '0 筆不提醒；有紀錄但從未匯出要提醒；3 天前不提醒；滿 ' + c.remindDays +
+                ' 天要提醒；暫停期間不提醒、暫停過期恢復提醒',
+      actual: '0 筆 ' + empty.reason + '；從未 ' + (never.show ? '提醒' : '不提醒') +
+              '；3 天前 ' + (fresh.show ? '提醒' : '不提醒') + '（' + fresh.days + ' 天）' +
+              '；14 天 ' + (edge.show ? '提醒' : '不提醒') + '（' + edge.days + ' 天）' +
+              '；暫停中 ' + (snoozed.show ? '提醒' : '不提醒') + '；暫停過期 ' + (expired.show ? '提醒' : '不提醒'),
+      pass: !empty.show && never.show && never.reason === 'never' && !fresh.show && fresh.days === 3 &&
+            edge.show && edge.days === 14 && !snoozed.show && snoozed.reason === 'snoozed' && expired.show });
   })();
 
   // TC-21：讀數證據強度（分母須為實際辨識次數，不得只算「讀出此型別的次數」）
@@ -2736,6 +2830,7 @@ function runSelfTests() {
       return a.date < b.date ? -1 : 1;
     }).map(recRow).join('') : '<p class="muted">本週尚無紀錄。</p>';
     bindRecButtons($('dashRecords'));
+    renderProtection();      // 紀錄數變動會影響備份提醒
   }
 
   function recRow(r) {
@@ -4489,6 +4584,7 @@ function runSelfTests() {
     const payload = { schema: 'weekly-exercise-tracker', version: CONFIG.meta.appVersion,
                       exportedAt: new Date().toISOString(), settings: settings, custom: custom, records: records };
     download('exercise-records-' + fmtDate(new Date()) + '.json', JSON.stringify(payload, null, 2), 'application/json');
+    markExported();
   });
   $('btnExportCsv').addEventListener('click', function () {
     const head = ['id', 'date', 'weekStart', 'activity', 'met', 'metSource', 'minutes', 'intensity',
@@ -4520,6 +4616,7 @@ function runSelfTests() {
         if (d.settings) Object.assign(settings, d.settings);
         if (Array.isArray(d.custom)) custom = d.custom;
         saveRecords(); saveSettings(); saveCustom();
+        if (d.exportedAt && !isNaN(new Date(d.exportedAt).getTime())) markExported(d.exportedAt);
         applyFontSize();
         buildActivitySelect(); renderSettings(); viewWeekStart = null; renderDash(); renderHistory();
         toast('匯入完成');
@@ -4532,11 +4629,133 @@ function runSelfTests() {
     if (!confirm('將清除所有紀錄、設定與自訂項目，且無法復原。確定？')) return;
     records = []; custom = []; settings = { weightKg: 65, age: 35, restHR: 60, weekStart: 1,
                                             hrSwimOffset: CONFIG.hr.swimOffsetDefault, fontSize: 'm' };
-    saveRecords(); saveSettings(); saveCustom();
+    saveRecords(); saveSettings(); saveCustom(); saveBackupMeta({});
     applyFontSize();
     buildActivitySelect(); renderSettings(); resetForm(); viewWeekStart = null; renderDash(); renderHistory();
     toast('已清除所有資料');
   });
+
+  /* ---------- 資料保護：備份提醒、加入主畫面、持久保存、離線 ----------
+     紀錄只存在本機，沒有雲端副本。這一段不改變任何計算，只負責降低資料遺失的機會。 */
+  const LS_BACKUP = 'wex.backup.v1';    // { lastExportAt, snoozeUntil, installHintDismissed }
+  function backupMeta() {
+    try { return JSON.parse(lsGet(LS_BACKUP) || '{}') || {}; } catch (e) { return {}; }
+  }
+  function saveBackupMeta(m) { lsSet(LS_BACKUP, JSON.stringify(m)); }
+  function markExported(iso) {
+    const m = backupMeta();
+    m.lastExportAt = iso || new Date().toISOString();
+    delete m.snoozeUntil;
+    saveBackupMeta(m);
+    renderProtection();
+  }
+
+  const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) ||
+                (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);   // iPadOS 會偽裝成 Mac
+  function isStandalone() {
+    return window.navigator.standalone === true ||
+      !!(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+  }
+  let installPrompt = null;        // Android／桌機 Chrome 的安裝事件
+  let persistState = 'unknown';    // granted / notGranted / unsupported / unknown
+  let swState = 'off';             // on / off / unsupported
+
+  function renderProtection() {
+    const m = backupMeta();
+    const nudge = backupNudge(records.length, m.lastExportAt || null, m.snoozeUntil || null,
+                              new Date().toISOString());
+
+    // 儀表板一次只顯示一則提醒，免得新使用者第一筆紀錄就被兩大塊說明淹沒。
+    // iPhone 尚未加入主畫面時先給「加入主畫面」——它防的是資料被自動刪除，比備份更前面一步。
+    const showHint = isIOS && !isStandalone() && records.length > 0 && !m.installHintDismissed && storageOk;
+    // 備份提醒（無法寫入 localStorage 時已有另一則警告，不重複）
+    const showNudge = nudge.show && storageOk && !showHint;
+    const box = $('backupNudge');
+    box.classList.toggle('hidden', !showNudge);
+    if (showNudge) {
+      box.innerHTML = '<strong>你有 ' + records.length + ' 筆紀錄只存在這個瀏覽器裡，沒有雲端副本。</strong>' +
+        (nudge.days === null ? '目前還沒有匯出過備份。' : '上次匯出備份是 ' + nudge.days + ' 天前。') +
+        '換手機、清除瀏覽器資料，或瀏覽器自動清理儲存空間時，紀錄就會消失。' +
+        '<div class="btnrow" style="margin-top:8px">' +
+        '<button class="btn small" data-act="export">立即匯出備份</button>' +
+        '<button class="btn secondary small" data-act="snooze">' + CONFIG.backup.snoozeDays + ' 天後再提醒</button></div>';
+      box.querySelector('[data-act="export"]').addEventListener('click', function () { $('btnExportJson').click(); });
+      box.querySelector('[data-act="snooze"]').addEventListener('click', function () {
+        const mm = backupMeta();
+        mm.snoozeUntil = new Date(Date.now() + CONFIG.backup.snoozeDays * 86400000).toISOString();
+        saveBackupMeta(mm); renderProtection();
+      });
+    }
+
+    // 儀表板：iPhone 在 Safari 中開啟時，建議加入主畫面
+    const hint = $('installHint');
+    hint.classList.toggle('hidden', !showHint);
+    if (showHint) {
+      hint.innerHTML = '<strong>建議把這個網站加入主畫面。</strong>依 Apple 公布的政策，iPhone 的 Safari ' +
+        '在你使用 Safari 滿 7 天、期間都沒有開啟這個網站時，可能會清掉它儲存的資料；加入主畫面後的網頁 App ' +
+        '被說明為不受此限，也可以離線開啟。<br>做法：點 Safari 的<strong>「分享」</strong>按鈕 → 選<strong>「加入主畫面」</strong>。' +
+        '<div class="btnrow" style="margin-top:8px"><button class="btn secondary small" data-act="dismiss">知道了，不再顯示</button></div>';
+      hint.querySelector('[data-act="dismiss"]').addEventListener('click', function () {
+        const mm = backupMeta(); mm.installHintDismissed = true; saveBackupMeta(mm); renderProtection();
+      });
+    }
+
+    // 設定頁：資料保護狀態
+    const last = m.lastExportAt ? new Date(m.lastExportAt) : null;
+    const lastTxt = last ? fmtDate(last) + '（' + (nudge.days === 0 ? '今天' : nudge.days + ' 天前') + '）' : '從未匯出';
+    const installTxt = isStandalone() ? '已安裝為主畫面 App'
+      : isIOS ? '在 Safari 中開啟（分享 → 加入主畫面）'
+      : installPrompt ? '可安裝，請按下方按鈕' : '在瀏覽器中開啟';
+    const persistTxt = { granted: '已核准：瀏覽器不會在儲存空間不足時自動清除',
+                         notGranted: '尚未核准（未安裝為 App 時常見）',
+                         unsupported: '此瀏覽器不支援查詢', unknown: '查詢中…' }[persistState];
+    const swTxt = { on: '已啟用：沒有網路也能開啟', off: '未啟用（需以 https 開啟）',
+                    unsupported: '此瀏覽器不支援' }[swState];
+    $('protectInfo').innerHTML =
+      '<dt>上次匯出備份</dt><dd>' + esc(lastTxt) + '</dd>' +
+      '<dt>安裝狀態</dt><dd>' + esc(installTxt) + '</dd>' +
+      '<dt>持久保存</dt><dd>' + esc(persistTxt) + '</dd>' +
+      '<dt>離線使用</dt><dd>' + esc(swTxt) + '</dd>';
+    $('btnPersist').classList.toggle('hidden', persistState !== 'notGranted');
+    $('btnInstall').classList.toggle('hidden', !installPrompt || isStandalone());
+  }
+
+  // 持久保存：只查詢、不主動要求（Firefox 會跳出權限詢問，不該在第一次開啟時就打擾）
+  if (navigator.storage && typeof navigator.storage.persisted === 'function') {
+    navigator.storage.persisted()
+      .then(function (ok) { persistState = ok ? 'granted' : 'notGranted'; })
+      .catch(function () { persistState = 'unsupported'; })
+      .then(renderProtection);
+  } else { persistState = 'unsupported'; }
+  $('btnPersist').addEventListener('click', function () {
+    navigator.storage.persist().then(function (ok) {
+      persistState = ok ? 'granted' : 'notGranted';
+      toast(ok ? '瀏覽器已同意持久保存' : '瀏覽器未同意；加入主畫面後再試通常較容易成功');
+      renderProtection();
+    }).catch(function () { toast('無法要求持久保存'); });
+  });
+
+  // Android／桌機 Chrome：攔下安裝事件，改由設定頁的按鈕觸發
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault(); installPrompt = e; renderProtection();
+  });
+  window.addEventListener('appinstalled', function () { installPrompt = null; renderProtection(); });
+  $('btnInstall').addEventListener('click', function () {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    installPrompt.userChoice.then(function () { installPrompt = null; renderProtection(); });
+  });
+
+  // 離線：只在安全來源註冊。以本機檔案開啟或嵌在 iframe（如 Artifact）時略過，避免無意義的錯誤
+  (function registerSW() {
+    if (!('serviceWorker' in navigator)) { swState = 'unsupported'; return; }
+    const secure = location.protocol === 'https:' || location.hostname === 'localhost' ||
+                   location.hostname === '127.0.0.1';
+    if (!secure || inFrame) return;
+    navigator.serviceWorker.register('sw.js')
+      .then(function () { swState = 'on'; renderProtection(); })
+      .catch(function () { swState = 'off'; renderProtection(); });
+  })();
 
   /* ---------- 自我測試 ---------- */
   $('btnRunTests').addEventListener('click', function () {
