@@ -162,6 +162,13 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-
 .field{margin-bottom:12px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+/* 本週還差多少：每項一行，前置狀態符號 */
+.gaplist{list-style:none;margin:0;padding:0}
+.gaplist li{padding:8px 0;border-bottom:1px dashed var(--border);line-height:1.55}
+.gaplist li:last-child{border-bottom:none}
+.gaplist .ic{display:inline-block;width:1.4em;font-weight:700}
+.gaplist .ok{color:var(--accent)}
+.gaplist .warn{color:var(--red)}
 /* 資料保護狀態：標籤／值兩欄，窄螢幕自動換行 */
 .protect{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;margin:0;font-size:calc(14px * var(--fs))}
 .protect dt{color:var(--text-muted);white-space:nowrap}
@@ -383,6 +390,12 @@ svg.chart{width:100%;height:auto;display:block}
       <div class="callout" style="margin-bottom:0">
         有氧與肌力為<strong>獨立且不可互相取代</strong>的建議，兩者不得互相折抵；有氧超量不會使肌力未達標時亮綠燈。
       </div>
+    </div>
+
+    <div class="card">
+      <h2 id="gapTitle">本週還差多少</h2>
+      <ul class="gaplist" id="gapList"></ul>
+      <p class="faint" style="margin:6px 0 0">換算沿用 MEM 定義：中強度 1 分鐘 ＝ 1 MEM、高強度 1 分鐘 ＝ 2 MEM。快走、跑步僅為例子，任何同強度的活動都可以。</p>
     </div>
 
     <div class="card">
@@ -2214,6 +2227,41 @@ function rpeToIntensity(scale, value) {
 }
 
 /**
+ * 本週還差多少（Move Your Way 式的「事先規劃」，而不只是事後判定）。
+ * summary 為 summarizeWeek() 的結果；daysLeft 為本週含今天在內還剩幾天，
+ * 已結束的週傳 0（不給每日配速）。
+ *
+ * 換算完全沿用 MEM 定義（中強度 1 分 = 1 MEM，高強度 1 分 = 2 MEM），不引入新的假設：
+ *   中強度分鐘 = 還差的 MEM；高強度分鐘 = 還差的 MEM ÷ 2（無條件進位）
+ * 肌力天數必須落在不同日期，所以剩餘天數不夠時要明講「本週已來不及」，不能照樣叫人去練。
+ */
+function weeklyGap(summary, daysLeft) {
+  const a = CONFIG.aerobic, st = CONFIG.strength;
+  const left = Math.max(0, Math.floor(Number(daysLeft) || 0));
+  const mem = Number(summary.mem) || 0;
+  const remaining = Math.max(0, a.memBasic - mem);
+  const aerobic = {
+    met: mem >= a.memBasic,
+    remaining: round(remaining, 1),
+    moderateMin: Math.ceil(remaining),
+    vigorousMin: Math.ceil(remaining / 2),
+    perDayModerate: (remaining > 0 && left > 0) ? Math.ceil(remaining / left) : null,
+    // 已達基本建議時，距「額外效益」（> 300 MEM）還要多少；已在額外效益區間則為 null
+    toAdditional: (mem >= a.memBasic && mem <= a.memAdditional) ? Math.ceil(a.memAdditional - mem) : null
+  };
+  const s = summary.strength;
+  const daysNeeded = Math.max(0, st.minDays - s.days);
+  const strength = {
+    met: s.met,
+    daysNeeded: daysNeeded,
+    // 剩餘天數不夠排完所需的肌力日（已結束的週 left = 0 也屬此類）
+    tooLate: daysNeeded > 0 && daysNeeded > left,
+    missing: s.missing.map(function (g) { return g.zh; })
+  };
+  return { aerobic: aerobic, strength: strength, daysLeft: left, done: aerobic.met && strength.met };
+}
+
+/**
  * 是否該提醒使用者匯出備份。
  * 日期一律以 ISO 字串傳入（含時區無妨），nowIso 由呼叫端提供，便於測試。
  * 回傳 { show, days, reason }：days 為距上次匯出的整天數，從未匯出則為 null。
@@ -2333,6 +2381,42 @@ function runSelfTests() {
       actual: '天數=' + s.days + '（' + (s.daysOk ? '達標' : '未達標') + '）、缺漏肌群=' + (missingZh || '無') + ' → 肌力' + (s.met ? '達標' : '未達標'),
       pass: s.days === 2 && s.daysOk === true && s.groupsOk === false && s.met === false &&
             s.missing.length === 1 && s.missing[0].id === 'abdomen' });
+  })();
+
+  // TC-23：本週還差多少（沿用 MEM 定義換算，不得引入新的換算係數）
+  (function () {
+    const ws = '2026-10-19';
+    const strengthRec = function (date, muscles) {
+      return { date: date, met: 0, minutes: 0, isStrength: true, strengthModerate: true, muscles: muscles };
+    };
+    // 情境 A：週三，已快走 60 分（MEM 60），肌力 1 天（腿髖背）
+    const A = weeklyGap(summarizeWeek([
+      { date: '2026-10-20', met: 5.0, minutes: 60 }, strengthRec('2026-10-20', ['legs', 'hips', 'back'])], 70), 5);
+    // 情境 B：有氧已 200 MEM（未過 300），肌力已 2 天但缺腹部
+    const B = weeklyGap(summarizeWeek([
+      { date: '2026-10-19', met: 9.6, minutes: 50 }, { date: '2026-10-21', met: 5.0, minutes: 100 },
+      strengthRec('2026-10-19', ['legs', 'hips', 'back', 'chest']),
+      strengthRec('2026-10-22', ['shoulders', 'arms'])], 70), 3);
+    // 情境 C：週日（只剩今天），肌力 0 天 → 本週已來不及湊滿 2 天
+    const C = weeklyGap(summarizeWeek([], 70), 1);
+    // 情境 D：已結束的週（daysLeft 0）不給每日配速
+    const D = weeklyGap(summarizeWeek([{ date: ws, met: 5.0, minutes: 30 }], 70), 0);
+    T.push({ id: 'TC-23', name: '本週還差多少（快走／跑步換算、每日配速、肌力是否來得及）',
+      expected: 'A：還差 90 MEM ＝ 中強度 90 分或高強度 45 分，剩 5 天每天 18 分；肌力還差 1 天、來得及、缺腹部／胸部／肩部／手臂（依 CONFIG 順序）｜' +
+                'B：有氧達標，距額外效益 100；肌力天數夠但缺腹部｜C：只剩 1 天、還差 2 個肌力日 → 來不及｜D：已結束週無每日配速',
+      actual: 'A：還差 ' + A.aerobic.remaining + '＝中 ' + A.aerobic.moderateMin + ' 或高 ' + A.aerobic.vigorousMin +
+              '，每天 ' + A.aerobic.perDayModerate + '；肌力差 ' + A.strength.daysNeeded + ' 天、' +
+              (A.strength.tooLate ? '來不及' : '來得及') + '、缺 ' + A.strength.missing.join('／') +
+              '｜B：' + (B.aerobic.met ? '達標' : '未達') + '，距額外 ' + B.aerobic.toAdditional + '；肌力差 ' +
+              B.strength.daysNeeded + ' 天、缺 ' + B.strength.missing.join('／') +
+              '｜C：差 ' + C.strength.daysNeeded + ' 天、' + (C.strength.tooLate ? '來不及' : '來得及') +
+              '｜D：每日配速 ' + D.aerobic.perDayModerate,
+      pass: A.aerobic.remaining === 90 && A.aerobic.moderateMin === 90 && A.aerobic.vigorousMin === 45 &&
+            A.aerobic.perDayModerate === 18 && A.strength.daysNeeded === 1 && !A.strength.tooLate &&
+            A.strength.missing.join(',') === '腹部,胸部,肩部,手臂' &&
+            B.aerobic.met && B.aerobic.toAdditional === 100 && B.strength.daysNeeded === 0 &&
+            B.strength.missing.join(',') === '腹部' && !B.done &&
+            C.strength.daysNeeded === 2 && C.strength.tooLate && D.aerobic.perDayModerate === null });
   })();
 
   // TC-22：備份提醒時機（紀錄只存在本機，沒有雲端副本）
@@ -2830,7 +2914,55 @@ function runSelfTests() {
       return a.date < b.date ? -1 : 1;
     }).map(recRow).join('') : '<p class="muted">本週尚無紀錄。</p>';
     bindRecButtons($('dashRecords'));
+    renderGap(s, viewWeekStart, end);
     renderProtection();      // 紀錄數變動會影響備份提醒
+  }
+
+  /** 「本週還差多少」：把燈號翻成下一步該做什麼 */
+  function renderGap(s, ws, we) {
+    const today = fmtDate(new Date());
+    const DAY = 86400000;
+    // 本週：含今天還剩幾天；已結束的週：0；尚未開始的週：整週 7 天
+    const daysLeft = today > we ? 0 : today < ws ? 7
+      : Math.round((parseDate(we).getTime() - parseDate(today).getTime()) / DAY) + 1;
+    const past = daysLeft === 0;
+    const g = weeklyGap(s, daysLeft);
+    $('gapTitle').textContent = past ? '該週差距' : (today < ws ? '這週的目標' : '本週還差多少');
+    const li = function (cls, ic, html) {
+      return '<li><span class="ic ' + cls + '">' + ic + '</span>' + html + '</li>';
+    };
+    const rows = [];
+
+    const A = g.aerobic;
+    if (A.met) {
+      rows.push(li('ok', '✓', A.toAdditional !== null
+        ? '有氧已達基本建議（' + round(s.mem, 0) + ' MEM）。若想取得額外效益，需再累積<strong>超過 ' + A.toAdditional + ' MEM</strong>。'
+        : '有氧已進入額外效益區間（' + round(s.mem, 0) + ' MEM）。'));
+    } else if (past) {
+      rows.push(li('warn', '✕', '該週結束時有氧還差 <strong>' + A.remaining + ' MEM</strong>。'));
+    } else {
+      rows.push(li('', '○', '有氧還差 <strong>' + A.remaining + ' MEM</strong>：中強度（如快走）約 <strong>' + A.moderateMin +
+        ' 分鐘</strong>，或高強度（如跑步）約 <strong>' + A.vigorousMin + ' 分鐘</strong>。' +
+        (A.perDayModerate !== null
+          ? '本週含今天還剩 ' + g.daysLeft + ' 天，平均每天快走約 <strong>' + A.perDayModerate + ' 分鐘</strong>即可。' : '')));
+    }
+
+    const S = g.strength;
+    const missing = S.missing.length ? '尚未練到：<strong>' + esc(S.missing.join('、')) + '</strong>。' : '';
+    if (S.met) {
+      rows.push(li('ok', '✓', '肌力已達標（' + s.strength.days + ' 天，7 大肌群皆涵蓋）。'));
+    } else if (S.daysNeeded === 0) {
+      rows.push(li('', '○', '肌力天數已足，但' + missing + '下次訓練把這些部位排進去即可。'));
+    } else if (past) {
+      rows.push(li('warn', '✕', '該週肌力練了 ' + s.strength.days + ' 天，還差 <strong>' + S.daysNeeded + ' 天</strong>。' + missing));
+    } else if (S.tooLate) {
+      rows.push(li('warn', '✕', '肌力還差 <strong>' + S.daysNeeded + ' 天</strong>，但本週只剩 ' + g.daysLeft +
+        ' 天，<strong>已來不及湊滿</strong>（肌力日須在不同日期）。下週記得提早安排。' + missing));
+    } else {
+      rows.push(li('', '○', '肌力還差 <strong>' + S.daysNeeded + ' 天</strong>（須在不同日期），本週含今天還剩 ' +
+        g.daysLeft + ' 天。' + missing));
+    }
+    $('gapList').innerHTML = rows.join('');
   }
 
   function recRow(r) {
